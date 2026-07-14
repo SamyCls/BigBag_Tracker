@@ -20,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
+  bool _sideNavCollapsed = false;
 
   static const _screens = [
     ProductionScreen(),
@@ -41,85 +42,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 700;
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
     final app = context.watch<AppProvider>();
 
     if (app.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // ── Landscape (wide): permanent sidebar ───────────────────────────
-    if (isWide && isLandscape) {
+    // ── Tablets & Wide Screens (width >= 700): permanent sidebar ───────
+    if (isWide) {
       return Scaffold(
         body: Row(
           children: [
             _SideNav(
               index: _index,
               destinations: _destinations,
+              stockCount: app.stockCount,
+              collapsed: _sideNavCollapsed,
+              onToggle: () => setState(() => _sideNavCollapsed = !_sideNavCollapsed),
               onTap: (i) => setState(() => _index = i),
             ),
             const VerticalDivider(width: 1),
             Expanded(
               child: IndexedStack(index: _index, children: _screens),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // ── Portrait tablet: sidebar hidden behind drawer ─────────────────
-    if (isWide && !isLandscape) {
-      return Scaffold(
-        drawer: Drawer(
-          width: 280,
-          child: SafeArea(
-            child: Builder(
-              builder: (ctx) => _SideNav(
-                index: _index,
-                destinations: _destinations,
-                onTap: (i) {
-                  setState(() => _index = i);
-                  Navigator.of(ctx).pop();
-                },
-              ),
-            ),
-          ),
-        ),
-        body: Stack(
-          children: [
-            IndexedStack(index: _index, children: _screens),
-            Positioned(
-              top: 20,
-              left: 20,
-              child: Builder(
-                builder: (ctx) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Material(
-                    color: isDark
-                        ? AppColors.cardDark
-                        : AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                    elevation: 4,
-                    shadowColor: Colors.black26,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Icon(
-                          Icons.menu,
-                          size: 32,
-                          color: isDark
-                              ? AppColors.inkOnDark
-                              : AppColors.ink,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -145,11 +89,17 @@ class _HomeScreenState extends State<HomeScreen> {
 class _SideNav extends StatelessWidget {
   final int index;
   final List<({IconData icon, String label})> destinations;
+  final int stockCount;
+  final bool collapsed;
+  final VoidCallback onToggle;
   final ValueChanged<int> onTap;
 
   const _SideNav({
     required this.index,
     required this.destinations,
+    required this.stockCount,
+    required this.collapsed,
+    required this.onToggle,
     required this.onTap,
   });
 
@@ -160,12 +110,25 @@ class _SideNav extends StatelessWidget {
     final selectedBg = isDark ? const Color(0xFF2C2C2E) : Colors.white;
     final selectedColor = Theme.of(context).colorScheme.primary;
     final unselectedColor = isDark ? Colors.white54 : Colors.black45;
+    final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
 
     return Container(
-      width: 280,
+      width: collapsed ? 80 : 280,
       color: bg,
       child: Column(
         children: [
+          // Header with toggle button
+          Container(
+            height: 70,
+            alignment: collapsed ? Alignment.center : Alignment.centerLeft,
+            padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 20),
+            child: IconButton(
+              icon: const Icon(Icons.menu, size: 28),
+              color: unselectedColor,
+              onPressed: onToggle,
+            ),
+          ),
+          const Divider(height: 1),
           for (var i = 0; i < destinations.length; i++)
             Expanded(
               child: _SideNavItem(
@@ -175,7 +138,18 @@ class _SideNav extends StatelessWidget {
                 selectedBg: selectedBg,
                 selectedColor: selectedColor,
                 unselectedColor: unselectedColor,
+                badge: i == 1 && stockCount > 0 ? stockCount : null,
                 onTap: () => onTap(i),
+                collapsed: collapsed,
+              ),
+            ),
+          // version footer
+          if (!collapsed)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+              child: Text(
+                'v1.0 · Industriel',
+                style: TextStyle(fontSize: 14, color: mute, fontWeight: FontWeight.w500),
               ),
             ),
         ],
@@ -191,7 +165,9 @@ class _SideNavItem extends StatelessWidget {
   final Color selectedBg;
   final Color selectedColor;
   final Color unselectedColor;
+  final int? badge;
   final VoidCallback onTap;
+  final bool collapsed;
 
   const _SideNavItem({
     required this.icon,
@@ -200,7 +176,9 @@ class _SideNavItem extends StatelessWidget {
     required this.selectedBg,
     required this.selectedColor,
     required this.unselectedColor,
+    this.badge,
     required this.onTap,
+    required this.collapsed,
   });
 
   @override
@@ -213,7 +191,7 @@ class _SideNavItem extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 20),
           decoration: selected
               ? BoxDecoration(
                   border: Border(
@@ -221,21 +199,70 @@ class _SideNavItem extends StatelessWidget {
                   ),
                 )
               : null,
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.center,
           child: Row(
+            mainAxisAlignment: collapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: color,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 36, color: color),
+                  if (collapsed && badge != null && badge! > 0)
+                    Positioned(
+                      right: -8,
+                      top: -8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$badge',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (!collapsed) ...[
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: color,
+                    ),
                   ),
                 ),
-              ),
+                if (badge != null && badge! > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$badge',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),

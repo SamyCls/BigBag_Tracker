@@ -128,7 +128,7 @@ class _HistRow extends StatelessWidget {
     final leafDark = isDark ? AppColors.leafOnDark : AppColors.leafDark;
 
     final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 760;
+    final isWide = width >= 980;
 
     final content = isWide
         ? Row(
@@ -163,10 +163,15 @@ class _HistRow extends StatelessWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      '${camion ?? "—"} · ${chauffeur ?? "—"}',
-                      style: TextStyle(fontSize: 17, color: mute, fontWeight: FontWeight.w500),
-                    ),
+                    if ((camion != null && camion!.trim().isNotEmpty) ||
+                        (chauffeur != null && chauffeur!.trim().isNotEmpty))
+                      Text(
+                        [
+                          if (camion != null && camion!.trim().isNotEmpty) camion!.trim(),
+                          if (chauffeur != null && chauffeur!.trim().isNotEmpty) chauffeur!.trim(),
+                        ].join(' · '),
+                        style: TextStyle(fontSize: 17, color: mute, fontWeight: FontWeight.w500),
+                      ),
                   ],
                 ),
               ),
@@ -258,10 +263,15 @@ class _HistRow extends StatelessWidget {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-              Text(
-                '${camion ?? "—"} · ${chauffeur ?? "—"}',
-                style: TextStyle(fontSize: 17, color: mute, fontWeight: FontWeight.w500),
-              ),
+              if ((camion != null && camion!.trim().isNotEmpty) ||
+                  (chauffeur != null && chauffeur!.trim().isNotEmpty))
+                Text(
+                  [
+                    if (camion != null && camion!.trim().isNotEmpty) camion!.trim(),
+                    if (chauffeur != null && chauffeur!.trim().isNotEmpty) chauffeur!.trim(),
+                  ].join(' · '),
+                  style: TextStyle(fontSize: 17, color: mute, fontWeight: FontWeight.w500),
+                ),
               const SizedBox(height: 14),
               Row(
                 children: [

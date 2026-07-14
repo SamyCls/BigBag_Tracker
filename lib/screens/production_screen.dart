@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/big_bag_card.dart';
 import '../widgets/numeric_keypad.dart';
 import '../utils/toast.dart';
 
@@ -51,17 +51,18 @@ class _ProductionScreenState extends State<ProductionScreen> {
         : AppColors.leafTint;
 
     final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 700;
+    final isWide = width >= 980;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
 
     if (_entering) {
-      // Full-screen, no-scroll layout for the entry form.
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: _buildEntryForm(
             context,
             app,
-            isWide,
+            isWide && isLandscape,
             ink,
             mute,
             leaf,
@@ -100,7 +101,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Production',
+                    'Production Big Bag',
                     style: TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.w800,
@@ -138,7 +139,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               ),
             ),
             Text(
-              '${recent.length} tickets',
+              '${recent.length} derniers',
               style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w600),
             ),
           ],
@@ -155,18 +156,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 380,
-              mainAxisExtent: 170,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: recent.length,
-            itemBuilder: (context, i) => BigBagCard(bb: recent[i]),
-          ),
+          _RecentTable(bags: recent, ink: ink, mute: mute),
       ],
     );
   }
@@ -215,8 +205,44 @@ class _ProductionScreenState extends State<ProductionScreen> {
   ) {
     final canSubmit = int.tryParse(_weight) != null && int.parse(_weight) >= 50;
 
-    // ── weight pad (left column) ──────────────────────────────────────────
-    final weightPad = Column(
+    // ── shared header ─────────────────────────────────────────────────────
+    final header = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Nouveau Big Bag',
+                style: TextStyle(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w800,
+                  color: ink,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'ID prévu : ${app.nextBBCode} · écrivez ce numéro au marqueur sur le sac',
+                style: TextStyle(fontSize: 19, color: mute, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => setState(() {
+            _entering = false;
+            _weight = '';
+            _quality = Quality.clair;
+          }),
+          icon: const Icon(Icons.arrow_back, size: 22),
+          label: const Text('Retour', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        ),
+      ],
+    );
+
+    // ── weight pad ────────────────────────────────────────────────────────
+    Widget buildWeightPad({bool expandKeypad = true}) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _WeightDisplay(weight: _weight, ink: ink, mute: mute),
@@ -237,24 +263,40 @@ class _ProductionScreenState extends State<ProductionScreen> {
               .toList(),
         ),
         const SizedBox(height: 10),
-        Expanded(
-          child: NumericKeypad(
-            expand: true,
-            onDigit: (d) => setState(() {
-              if (_weight.length < 5) _weight += d;
-            }),
-            onClear: () => setState(() => _weight = ''),
-            onBackspace: () => setState(() {
-              if (_weight.isNotEmpty)
-                _weight = _weight.substring(0, _weight.length - 1);
-            }),
+        if (expandKeypad)
+          Expanded(
+            child: NumericKeypad(
+              expand: true,
+              onDigit: (d) => setState(() {
+                if (_weight.length < 5) _weight += d;
+              }),
+              onClear: () => setState(() => _weight = ''),
+              onBackspace: () => setState(() {
+                if (_weight.isNotEmpty)
+                  _weight = _weight.substring(0, _weight.length - 1);
+              }),
+            ),
+          )
+        else
+          SizedBox(
+            height: 320,
+            child: NumericKeypad(
+              expand: true,
+              onDigit: (d) => setState(() {
+                if (_weight.length < 5) _weight += d;
+              }),
+              onClear: () => setState(() => _weight = ''),
+              onBackspace: () => setState(() {
+                if (_weight.isNotEmpty)
+                  _weight = _weight.substring(0, _weight.length - 1);
+              }),
+            ),
           ),
-        ),
       ],
     );
 
-    // ── right panel ───────────────────────────────────────────────────────
-    final rightPanel = Column(
+    // ── quality + validate + id chip ──────────────────────────────────────
+    Widget buildRightPanel({bool expandButton = true}) => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
@@ -303,33 +345,63 @@ class _ProductionScreenState extends State<ProductionScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: canSubmit ? () => _submit(app) : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: leaf,
-              disabledBackgroundColor: leaf.withValues(alpha: 0.35),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        if (expandButton)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: canSubmit ? () => _submit(app) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: leaf,
+                disabledBackgroundColor: leaf.withValues(alpha: 0.35),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.check, size: 42, color: Colors.white),
+                  SizedBox(width: 14),
+                  Text(
+                    'VALIDER',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.check, size: 42, color: Colors.white),
-                SizedBox(width: 14),
-                Text(
-                  'VALIDER',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+          )
+        else
+          SizedBox(
+            height: 90,
+            child: ElevatedButton(
+              onPressed: canSubmit ? () => _submit(app) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: leaf,
+                disabledBackgroundColor: leaf.withValues(alpha: 0.35),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.check, size: 36, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text(
+                    'VALIDER',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),
@@ -372,56 +444,39 @@ class _ProductionScreenState extends State<ProductionScreen> {
       ],
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── header ────────────────────────────────────────────────────────
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nouveau Big Bag',
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                      color: ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ID prévu : ${app.nextBBCode} · écrivez ce numéro au marqueur sur le sac',
-                    style: TextStyle(fontSize: 19, color: mute, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
+    // ── landscape: full-screen two-column ─────────────────────────────────
+    if (isWide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 14),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(flex: 6, child: buildWeightPad(expandKeypad: true)),
+                const SizedBox(width: 16),
+                Expanded(flex: 5, child: buildRightPanel(expandButton: true)),
+              ],
             ),
-            OutlinedButton.icon(
-              onPressed: () => setState(() {
-                _entering = false;
-                _weight = '';
-              }),
-              icon: const Icon(Icons.close, size: 20),
-              label: const Text('Annuler', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        // ── main content (fills remaining screen) ─────────────────────────
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(flex: 6, child: weightPad),
-              const SizedBox(width: 16),
-              Expanded(flex: 5, child: rightPanel),
-            ],
           ),
-        ),
-      ],
+        ],
+      );
+    }
+
+    // ── portrait: scrollable single-column ────────────────────────────────
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 16),
+          buildWeightPad(expandKeypad: false),
+          const SizedBox(height: 16),
+          buildRightPanel(expandButton: false),
+        ],
+      ),
     );
   }
 }
@@ -643,6 +698,161 @@ class _TicketCta extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Table des derniers Big Bags produits
+// ---------------------------------------------------------------------------
+
+class _RecentTable extends StatelessWidget {
+  final List<BigBag> bags;
+  final Color ink;
+  final Color mute;
+
+  const _RecentTable({
+    required this.bags,
+    required this.ink,
+    required this.mute,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final card = isDark ? AppColors.cardDark : AppColors.card;
+    final line = isDark ? AppColors.lineDark : AppColors.line;
+    final fmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
+
+    const cols = ['ID', 'POIDS BRUT', 'QUALITÉ', 'CRÉÉ', 'STATUT'];
+    const flexes = [3, 2, 2, 3, 2];
+
+    Widget cell(String text, {bool bold = false, Color? color}) => Text(
+          text,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+            color: color ?? (bold ? ink : mute),
+            fontFamily: bold ? 'monospace' : null,
+          ),
+          overflow: TextOverflow.ellipsis,
+        );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: card,
+        border: Border.all(color: line),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          // Header row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: line)),
+            ),
+            child: Row(
+              children: [
+                for (var i = 0; i < cols.length; i++) ...[
+                  Expanded(
+                    flex: flexes[i],
+                    child: Text(
+                      cols[i],
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: mute,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Data rows
+          for (var i = 0; i < bags.length; i++)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                border: i < bags.length - 1
+                    ? Border(bottom: BorderSide(color: line, width: 0.8))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: flexes[0],
+                    child: Text(
+                      bags[i].code,
+                      style: AppTextStyles.monoWeight(20, FontWeight.w800, color: ink),
+                    ),
+                  ),
+                  Expanded(
+                    flex: flexes[1],
+                    child: cell('${bags[i].poidsBrut.toStringAsFixed(0)} kg'),
+                  ),
+                  Expanded(
+                    flex: flexes[2],
+                    child: cell(bags[i].qualite.label),
+                  ),
+                  Expanded(
+                    flex: flexes[3],
+                    child: cell(fmt.format(bags[i].createdAt)),
+                  ),
+                  Expanded(
+                    flex: flexes[4],
+                    child: _StatusBadge(status: bags[i].status),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final BigBagStatus status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final (bg, fg) = switch (status) {
+      BigBagStatus.stock => (
+          isDark
+              ? AppColors.leafOnDark.withValues(alpha: 0.16)
+              : AppColors.leafTint,
+          isDark ? AppColors.leafOnDark : AppColors.leafDark,
+        ),
+      BigBagStatus.charge => (
+          isDark
+              ? AppColors.sunOnDark.withValues(alpha: 0.16)
+              : AppColors.sunTint,
+          isDark ? AppColors.sunOnDark : AppColors.sun,
+        ),
+      BigBagStatus.expedie => (
+          isDark ? AppColors.cardAltDark : AppColors.cardAlt,
+          isDark ? AppColors.inkMuteDark : AppColors.inkMute,
+        ),
+    };
+
+    final label = switch (status) {
+      BigBagStatus.stock => 'EN STOCK',
+      BigBagStatus.charge => 'CHARGÉ',
+      BigBagStatus.expedie => 'EXPÉDIÉ',
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }

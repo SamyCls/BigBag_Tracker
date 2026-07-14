@@ -100,7 +100,7 @@ class _ListView extends StatelessWidget {
     final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
     final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
     final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 700;
+    final isWide = width >= 980;
 
     final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
 
@@ -319,12 +319,20 @@ class _SessionCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${chargement.camion ?? "—"} · ${chargement.chauffeur ?? "—"}',
-                    style: TextStyle(fontSize: 18, color: mute, fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if ((chargement.camion != null && chargement.camion!.trim().isNotEmpty) ||
+                      (chargement.chauffeur != null && chargement.chauffeur!.trim().isNotEmpty)) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        if (chargement.camion != null && chargement.camion!.trim().isNotEmpty)
+                          chargement.camion!.trim(),
+                        if (chargement.chauffeur != null && chargement.chauffeur!.trim().isNotEmpty)
+                          chargement.chauffeur!.trim(),
+                      ].join(' · '),
+                      style: TextStyle(fontSize: 18, color: mute, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -347,27 +355,32 @@ class _SessionCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
+                  Container(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: onTap,
-                      icon: Icon(
-                        paused ? Icons.play_arrow : Icons.arrow_forward,
-                        size: 22,
-                      ),
-                      label: Text(
-                        paused ? 'REPRENDRE' : 'CONTINUER',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.inkOnDark
-                            : AppColors.ink,
-                        foregroundColor: isDark
-                            ? AppColors.bgDark
-                            : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.inkOnDark : AppColors.ink,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          paused ? Icons.play_arrow : Icons.arrow_forward,
+                          size: 22,
+                          color: isDark ? AppColors.bgDark : Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          paused ? 'REPRENDRE' : 'CONTINUER',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? AppColors.bgDark : Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -452,12 +465,14 @@ class _SetupViewState extends State<_SetupView> {
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
 
-    // Past clients from terminated chargements, deduplicated
+    // Past clients from all chargements, deduplicated
     final query = _clientCtrl.text.trim().toLowerCase();
-    final pastClients = app.terminatedChargements
-        .map((c) => c.client)
-        .toSet()
-        .where((c) => query.isNotEmpty && c.toLowerCase().contains(query))
+    final allClients = {
+      ...app.terminatedChargements.map((c) => c.client),
+      ...app.activeChargements.map((c) => c.client),
+    };
+    final pastClients = allClients
+        .where((c) => query.isEmpty || c.toLowerCase().contains(query))
         .toList();
 
     return SafeArea(
@@ -638,17 +653,20 @@ class _SessionView extends StatefulWidget {
 class _SessionViewState extends State<_SessionView> {
   String _input = '';
 
-  Future<void> _tryAdd(AppProvider app) async {
-    if (_input.isEmpty) return;
+  Future<void> _tryAdd(AppProvider app, [String? code]) async {
+    final rawCode = code ?? _input;
+    if (rawCode.isEmpty) return;
     final result = await app.addBigBagToChargement(
       widget.chargement.id,
-      _input,
+      rawCode,
     );
     if (!mounted) return;
     switch (result) {
       case AddBBResult.ok:
-        showAppToast(context, '${app.normalizeCode(_input)} ajouté');
-        setState(() => _input = '');
+        showAppToast(context, '${app.normalizeCode(rawCode)} ajouté');
+        if (code == null || app.normalizeCode(_input) == app.normalizeCode(code)) {
+          setState(() => _input = '');
+        }
         break;
       case AddBBResult.notFound:
         showAppToast(context, 'Big Bag introuvable', isError: true);
@@ -684,8 +702,7 @@ class _SessionViewState extends State<_SessionView> {
     final line = isDark ? AppColors.lineDark : AppColors.line;
 
     final preview = _input.isEmpty ? null : app.normalizeCode(_input);
-    final width = MediaQuery.of(context).size.width;
-    final isWide = MediaQuery.orientationOf(context) == Orientation.landscape && width >= 700;
+    final isWide = MediaQuery.of(context).size.width >= 980;
 
     // Stock bags not yet loaded into this chargement → suggestion cards
     final stockSuggestions = app
@@ -693,239 +710,268 @@ class _SessionViewState extends State<_SessionView> {
         .where((b) => !bbs.any((loaded) => loaded.id == b.id))
         .toList();
 
-    // ── Add panel: preview + keypad only (no suggestions here) ─────────
-    final addPanel = Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: card,
-        border: Border.all(color: line),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'AJOUTER BIG BAG',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: mute,
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: leaf, width: 2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              preview ?? 'BB-______',
-              style: AppTextStyles.monoWeight(
-                52,
-                FontWeight.w800,
-                color: preview == null ? mute.withValues(alpha: 0.5) : ink,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // keypad fills ALL remaining space
-          Expanded(
-            child: NumericKeypad(
-              expand: true,
-              onDigit: (d) => setState(() {
-                if (_input.length < 6) _input += d;
-              }),
-              onClear: () => setState(() => _input = ''),
-              onBackspace: () => setState(() {
-                if (_input.isNotEmpty)
-                  _input = _input.substring(0, _input.length - 1);
-              }),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 70,
-            child: ElevatedButton.icon(
-              onPressed: _input.isEmpty ? null : () => _tryAdd(app),
-              icon: const Icon(Icons.add, size: 28),
-              label: const Text('AJOUTER', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    // ── List panel: suggestions at top, added bags below ────────────────
-    final listPanel = Container(
-      decoration: BoxDecoration(
-        color: card,
-        border: Border.all(color: line),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // suggestions row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-            child: Text(
-              stockSuggestions.isEmpty
-                  ? 'AUCUN SAC EN STOCK'
-                  : 'EN STOCK — appuyez pour sélectionner',
+    Widget buildAddPanel({required bool expandKeypad}) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: card,
+          border: Border.all(color: line),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'AJOUTER BIG BAG',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: mute,
-                letterSpacing: 0.3,
+                letterSpacing: 0.4,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 110,
-            child: stockSuggestions.isEmpty
-                ? Center(
-                    child: Text(
-                      'Tous les sacs ont été ajoutés',
-                      style: TextStyle(color: mute, fontSize: 16, fontStyle: FontStyle.italic),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: stockSuggestions.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, i) {
-                      final b = stockSuggestions[i];
-                      final isSelected = _input == b.id.toString();
-                      return _StockSuggestionCard(
-                        bb: b,
-                        selected: isSelected,
-                        leaf: leaf,
-                        ink: ink,
-                        mute: mute,
-                        card: card,
-                        line: line,
-                        onTap: () => setState(() =>
-                            _input = isSelected ? '' : b.id.toString()),
-                      );
-                    },
-                  ),
-          ),
-          Divider(height: 1, color: card == AppColors.cardDark ? AppColors.lineDark : AppColors.line),
-          // header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'BIG BAGS CHARGÉS',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: mute,
-                    letterSpacing: 0.4,
-                  ),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: leaf, width: 2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                preview ?? 'BB-______',
+                style: AppTextStyles.monoWeight(
+                  52,
+                  FontWeight.w800,
+                  color: preview == null ? mute.withValues(alpha: 0.5) : ink,
                 ),
-                Text(
-                  'Plus récent en haut',
-                  style: TextStyle(fontSize: 16, color: mute, fontWeight: FontWeight.w500),
-                ),
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: bbs.isEmpty
-                ? Center(
-                    child: Text(
-                      'Ajoutez votre premier Big Bag',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontStyle: FontStyle.italic,
-                        color: mute,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    itemCount: bbs.length,
-                    itemBuilder: (context, i) {
-                      final idx = bbs.length - 1 - i;
-                      final bb = bbs[idx];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 36,
-                              child: Text(
-                                '${idx + 1}',
-                                style: AppTextStyles.monoWeight(
-                                  18,
-                                  FontWeight.w700,
-                                  color: mute,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                bb.code,
-                                style: AppTextStyles.monoWeight(
-                                  24,
-                                  FontWeight.w800,
-                                  color: ink,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              '${fmt.format(bb.poidsBrut)} kg',
-                              style: AppTextStyles.monoWeight(
-                                20,
-                                FontWeight.w600,
-                                color: mute,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            TextButton.icon(
-                              onPressed: () =>
-                                  app.removeBigBagFromChargement(ch.id, bb.id),
-                              icon: const Icon(Icons.delete_outline, size: 22),
-                              label: const Text(
-                                'Retirer',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                              ),
-                              style: TextButton.styleFrom(
-                                foregroundColor: isDark
-                                    ? AppColors.clayOnDark
-                                    : AppColors.clay,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+            const SizedBox(height: 10),
+            if (expandKeypad)
+              Expanded(
+                child: NumericKeypad(
+                  expand: true,
+                  onDigit: (d) => setState(() {
+                    if (_input.length < 6) _input += d;
+                  }),
+                  onClear: () => setState(() => _input = ''),
+                  onBackspace: () => setState(() {
+                    if (_input.isNotEmpty) {
+                      _input = _input.substring(0, _input.length - 1);
+                    }
+                  }),
+                ),
+              )
+            else
+              SizedBox(
+                height: 290,
+                child: NumericKeypad(
+                  expand: true,
+                  onDigit: (d) => setState(() {
+                    if (_input.length < 6) _input += d;
+                  }),
+                  onClear: () => setState(() => _input = ''),
+                  onBackspace: () => setState(() {
+                    if (_input.isNotEmpty) {
+                      _input = _input.substring(0, _input.length - 1);
+                    }
+                  }),
+                ),
+              ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 70,
+              child: ElevatedButton.icon(
+                onPressed: _input.isEmpty ? null : () => _tryAdd(app),
+                icon: const Icon(Icons.add, size: 28),
+                label: const Text('AJOUTER', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildListPanel({required bool expandList}) {
+      final listContent = bbs.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Text(
+                  'Ajoutez votre premier Big Bag',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontStyle: FontStyle.italic,
+                    color: mute,
                   ),
-          ),
-        ],
-      ),
-    );
+                ),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              physics: expandList ? null : const NeverScrollableScrollPhysics(),
+              shrinkWrap: !expandList,
+              itemCount: bbs.length,
+              itemBuilder: (context, i) {
+                final idx = bbs.length - 1 - i;
+                final bb = bbs[idx];
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 36,
+                        child: Text(
+                          '${idx + 1}',
+                          style: AppTextStyles.monoWeight(
+                            18,
+                            FontWeight.w700,
+                            color: mute,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          bb.code,
+                          style: AppTextStyles.monoWeight(
+                            24,
+                            FontWeight.w800,
+                            color: ink,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${fmt.format(bb.poidsBrut)} kg',
+                        style: AppTextStyles.monoWeight(
+                          20,
+                          FontWeight.w600,
+                          color: mute,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      TextButton.icon(
+                        onPressed: () =>
+                            app.removeBigBagFromChargement(ch.id, bb.id),
+                        icon: const Icon(Icons.delete_outline, size: 22),
+                        label: const Text(
+                          'Retirer',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: isDark
+                              ? AppColors.clayOnDark
+                              : AppColors.clay,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+
+      return Container(
+        decoration: BoxDecoration(
+          color: card,
+          border: Border.all(color: line),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // suggestions row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Text(
+                stockSuggestions.isEmpty
+                    ? 'AUCUN SAC EN STOCK'
+                    : 'EN STOCK — appuyez pour ajouter',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: mute,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 110,
+              child: stockSuggestions.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Tous les sacs ont été ajoutés',
+                        style: TextStyle(color: mute, fontSize: 16, fontStyle: FontStyle.italic),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: stockSuggestions.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (context, i) {
+                        final b = stockSuggestions[i];
+                        final isSelected = _input.isNotEmpty && app.normalizeCode(_input) == b.code;
+                        return _StockSuggestionCard(
+                          bb: b,
+                          selected: isSelected,
+                          leaf: leaf,
+                          ink: ink,
+                          mute: mute,
+                          card: card,
+                          line: line,
+                          onTap: () => _tryAdd(app, b.code),
+                        );
+                      },
+                    ),
+            ),
+            Divider(height: 1, color: card == AppColors.cardDark ? AppColors.lineDark : AppColors.line),
+            // header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'BIG BAGS CHARGÉS',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: mute,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  Text(
+                    'Plus récent en haut',
+                    style: TextStyle(fontSize: 16, color: mute, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+            if (expandList)
+              Expanded(
+                child: listContent,
+              )
+            else
+              listContent,
+          ],
+        ),
+      );
+    }
 
     return SafeArea(
       child: Padding(
@@ -938,9 +984,11 @@ class _SessionViewState extends State<_SessionView> {
               children: [
                 IconButton(
                   onPressed: widget.onBack,
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.arrow_back, size: 30),
+                  padding: const EdgeInsets.all(12),
+                  constraints: const BoxConstraints(),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -964,13 +1012,26 @@ class _SessionViewState extends State<_SessionView> {
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    await app.pauseChargement(ch.id);
+                    if (ch.status == ChargementStatus.pause) {
+                      await app.resumeChargement(ch.id);
+                    } else {
+                      await app.pauseChargement(ch.id);
+                    }
                     widget.onBack();
                   },
-                  icon: const Icon(Icons.pause, size: 22),
-                  label: const Text('PAUSE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  icon: Icon(ch.status == ChargementStatus.pause ? Icons.play_arrow : Icons.pause, size: 24),
+                  label: Text(
+                    ch.status == ChargementStatus.pause ? 'REPRENDRE' : 'PAUSE',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: bbs.isEmpty
                       ? null
@@ -978,8 +1039,17 @@ class _SessionViewState extends State<_SessionView> {
                           final finished = await app.finishChargement(ch.id);
                           widget.onFinished(finished.id);
                         },
-                  icon: const Icon(Icons.check, size: 24),
-                  label: const Text('TERMINER', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  icon: const Icon(Icons.check, size: 26),
+                  label: const Text(
+                    'TERMINER',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1013,17 +1083,20 @@ class _SessionViewState extends State<_SessionView> {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(flex: 4, child: addPanel),
+                        Expanded(flex: 4, child: buildAddPanel(expandKeypad: true)),
                         const SizedBox(width: 16),
-                        Expanded(flex: 5, child: listPanel),
+                        Expanded(flex: 5, child: buildListPanel(expandList: true)),
                       ],
                     )
-                  : Column(
-                      children: [
-                        Expanded(flex: 5, child: addPanel),
-                        const SizedBox(height: 12),
-                        Expanded(flex: 5, child: listPanel),
-                      ],
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          buildAddPanel(expandKeypad: false),
+                          const SizedBox(height: 12),
+                          buildListPanel(expandList: false),
+                        ],
+                      ),
                     ),
             ),
           ],

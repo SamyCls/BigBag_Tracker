@@ -167,12 +167,6 @@ class AppProvider extends ChangeNotifier {
     if (bb.status == BigBagStatus.expedie) return AddBBResult.alreadyExpedie;
     if (bb.status == BigBagStatus.charge) return AddBBResult.alreadyCharge;
 
-    await _bbDao.updateStatus(
-      bb.id,
-      BigBagStatus.charge,
-      chargementId: chargementId,
-    );
-
     final updated = bb.copyWith(
       status: BigBagStatus.charge,
       chargementId: chargementId,
@@ -185,17 +179,18 @@ class AppProvider extends ChangeNotifier {
     _bbByChargement[chargementId] = list;
 
     notifyListeners();
+
+    await _bbDao.updateStatus(
+      bb.id,
+      BigBagStatus.charge,
+      chargementId: chargementId,
+    );
+
     return AddBBResult.ok;
   }
 
   /// Retire un Big Bag d'un chargement en cours (remet en stock).
   Future<void> removeBigBagFromChargement(int chargementId, int bbId) async {
-    await _bbDao.updateStatus(
-      bbId,
-      BigBagStatus.stock,
-      clearChargementId: true,
-    );
-
     final idx = _bigBags.indexWhere((b) => b.id == bbId);
     if (idx != -1) {
       _bigBags[idx] = _bigBags[idx].copyWith(
@@ -206,24 +201,30 @@ class AppProvider extends ChangeNotifier {
     _bbByChargement[chargementId]?.removeWhere((b) => b.id == bbId);
 
     notifyListeners();
+
+    await _bbDao.updateStatus(
+      bbId,
+      BigBagStatus.stock,
+      clearChargementId: true,
+    );
   }
 
   Future<void> pauseChargement(int id) async {
-    await _chDao.setStatus(id, ChargementStatus.pause);
     _updateChargementInList(
       id,
       (c) => c.copyWith(status: ChargementStatus.pause),
     );
     notifyListeners();
+    await _chDao.setStatus(id, ChargementStatus.pause);
   }
 
   Future<void> resumeChargement(int id) async {
-    await _chDao.setStatus(id, ChargementStatus.actif);
     _updateChargementInList(
       id,
       (c) => c.copyWith(status: ChargementStatus.actif),
     );
     notifyListeners();
+    await _chDao.setStatus(id, ChargementStatus.actif);
   }
 
   void _updateChargementInList(int id, Chargement Function(Chargement) update) {
