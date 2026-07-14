@@ -107,6 +107,11 @@ class BigBagDao {
     );
   }
 
+  Future<void> delete(int id) async {
+    final db = await _db;
+    await db.delete('big_bags', where: 'id = ?', whereArgs: [id]);
+  }
+
   /// Stats globales pour le tableau de Stock.
   Future<Map<String, Object?>> stats() async {
     final db = await _db;

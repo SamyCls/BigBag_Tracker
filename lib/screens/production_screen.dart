@@ -51,23 +51,31 @@ class _ProductionScreenState extends State<ProductionScreen> {
         : AppColors.leafTint;
 
     final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 800;
+    final isWide = width >= 700;
+
+    if (_entering) {
+      // Full-screen, no-scroll layout for the entry form.
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: _buildEntryForm(
+            context,
+            app,
+            isWide,
+            ink,
+            mute,
+            leaf,
+            leafDark,
+            leafTint,
+          ),
+        ),
+      );
+    }
 
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: _entering
-            ? _buildEntryForm(
-                context,
-                app,
-                isWide,
-                ink,
-                mute,
-                leaf,
-                leafDark,
-                leafTint,
-              )
-            : _buildHome(context, app, isWide, ink, mute, leaf),
+        child: _buildHome(context, app, isWide, ink, mute, leaf),
       ),
     );
   }
@@ -94,15 +102,15 @@ class _ProductionScreenState extends State<ProductionScreen> {
                   Text(
                     'Production',
                     style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w800,
                       color: ink,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     'Tapez pour créer un nouveau Big Bag · pesée manuelle',
-                    style: TextStyle(fontSize: 13, color: mute),
+                    style: TextStyle(fontSize: 21, color: mute, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -124,14 +132,14 @@ class _ProductionScreenState extends State<ProductionScreen> {
             Text(
               'Derniers produits',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
                 color: ink,
               ),
             ),
             Text(
               '${recent.length} tickets',
-              style: TextStyle(fontSize: 13, color: mute),
+              style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -142,7 +150,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
             child: Center(
               child: Text(
                 'Aucun Big Bag produit pour le moment',
-                style: TextStyle(color: mute),
+                style: TextStyle(color: mute, fontSize: 20),
               ),
             ),
           )
@@ -151,8 +159,8 @@ class _ProductionScreenState extends State<ProductionScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 260,
-              mainAxisExtent: 108,
+              maxCrossAxisExtent: 380,
+              mainAxisExtent: 170,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
@@ -166,8 +174,8 @@ class _ProductionScreenState extends State<ProductionScreen> {
   Widget _nextIdChip(AppProvider app, Color leaf, Color ink, Color mute) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      constraints: const BoxConstraints(minWidth: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      constraints: const BoxConstraints(minWidth: 180),
       decoration: BoxDecoration(
         color: isDark ? AppColors.cardDark : AppColors.card,
         border: Border.all(color: isDark ? AppColors.lineDark : AppColors.line),
@@ -180,15 +188,15 @@ class _ProductionScreenState extends State<ProductionScreen> {
           Text(
             'PROCHAIN ID',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
               color: mute,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             app.nextBBCode,
-            style: AppTextStyles.monoWeight(22, FontWeight.w800, color: leaf),
+            style: AppTextStyles.monoWeight(32, FontWeight.w800, color: leaf),
           ),
         ],
       ),
@@ -207,11 +215,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
   ) {
     final canSubmit = int.tryParse(_weight) != null && int.parse(_weight) >= 50;
 
+    // ── weight pad (left column) ──────────────────────────────────────────
     final weightPad = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _WeightDisplay(weight: _weight, ink: ink, mute: mute),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [500, 550, 600, 650, 700]
               .map(
@@ -227,20 +236,24 @@ class _ProductionScreenState extends State<ProductionScreen> {
               )
               .toList(),
         ),
-        const SizedBox(height: 12),
-        NumericKeypad(
-          onDigit: (d) => setState(() {
-            if (_weight.length < 5) _weight += d;
-          }),
-          onClear: () => setState(() => _weight = ''),
-          onBackspace: () => setState(() {
-            if (_weight.isNotEmpty)
-              _weight = _weight.substring(0, _weight.length - 1);
-          }),
+        const SizedBox(height: 10),
+        Expanded(
+          child: NumericKeypad(
+            expand: true,
+            onDigit: (d) => setState(() {
+              if (_weight.length < 5) _weight += d;
+            }),
+            onClear: () => setState(() => _weight = ''),
+            onBackspace: () => setState(() {
+              if (_weight.isNotEmpty)
+                _weight = _weight.substring(0, _weight.length - 1);
+            }),
+          ),
         ),
       ],
     );
 
+    // ── right panel ───────────────────────────────────────────────────────
     final rightPanel = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -263,13 +276,13 @@ class _ProductionScreenState extends State<ProductionScreen> {
               Text(
                 'QUALITÉ',
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
                   color: mute,
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Row(
                 children: Quality.values
                     .map(
@@ -289,9 +302,8 @@ class _ProductionScreenState extends State<ProductionScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 120,
+        const SizedBox(height: 14),
+        Expanded(
           child: ElevatedButton(
             onPressed: canSubmit ? () => _submit(app) : null,
             style: ElevatedButton.styleFrom(
@@ -304,12 +316,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Icon(Icons.check, size: 26, color: Colors.white),
-                SizedBox(width: 10),
+                Icon(Icons.check, size: 42, color: Colors.white),
+                SizedBox(width: 14),
                 Text(
                   'VALIDER',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 36,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
@@ -318,7 +330,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -330,8 +342,8 @@ class _ProductionScreenState extends State<ProductionScreen> {
               Text(
                 'ID GÉNÉRÉ AUTOMATIQUEMENT',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
                   color: leafDark,
                   letterSpacing: 0.5,
                 ),
@@ -340,7 +352,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               Text(
                 app.nextBBCode,
                 style: AppTextStyles.monoWeight(
-                  28,
+                  40,
                   FontWeight.w800,
                   color: leafDark,
                 ),
@@ -349,7 +361,8 @@ class _ProductionScreenState extends State<ProductionScreen> {
               Text(
                 'Écrire ce numéro sur le sac',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                   color: leafDark.withValues(alpha: 0.8),
                 ),
               ),
@@ -362,6 +375,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── header ────────────────────────────────────────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -372,15 +386,15 @@ class _ProductionScreenState extends State<ProductionScreen> {
                   Text(
                     'Nouveau Big Bag',
                     style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w800,
                       color: ink,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'ID prévu : ${app.nextBBCode} · écrivez ce numéro au marqueur sur le sac',
-                    style: TextStyle(fontSize: 13, color: mute),
+                    style: TextStyle(fontSize: 19, color: mute, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -390,23 +404,23 @@ class _ProductionScreenState extends State<ProductionScreen> {
                 _entering = false;
                 _weight = '';
               }),
-              icon: const Icon(Icons.close, size: 16),
-              label: const Text('Annuler'),
+              icon: const Icon(Icons.close, size: 20),
+              label: const Text('Annuler', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        if (isWide)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 14),
+        // ── main content (fills remaining screen) ─────────────────────────
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(flex: 6, child: weightPad),
-              const SizedBox(width: 20),
+              const SizedBox(width: 16),
               Expanded(flex: 5, child: rightPanel),
             ],
-          )
-        else
-          Column(children: [weightPad, const SizedBox(height: 20), rightPanel]),
+          ),
+        ),
       ],
     );
   }
@@ -439,8 +453,8 @@ class _WeightDisplay extends StatelessWidget {
           Text(
             'POIDS BRUT',
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
               color: mute,
               letterSpacing: 0.5,
             ),
@@ -454,18 +468,18 @@ class _WeightDisplay extends StatelessWidget {
               Text(
                 weight.isEmpty ? '0' : weight,
                 style: AppTextStyles.monoWeight(
-                  64,
+                  96,
                   FontWeight.w800,
                   color: weight.isEmpty ? mute : ink,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 'kg',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 32,
                   color: mute,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -502,7 +516,7 @@ class _SuggestionButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             '$value',
-            style: AppTextStyles.monoWeight(15, FontWeight.w700),
+            style: AppTextStyles.monoWeight(26, FontWeight.w800),
           ),
         ),
       ),
@@ -550,8 +564,8 @@ class _QualityOption extends StatelessWidget {
             quality.label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
               color: selected ? leafDark : mute,
             ),
           ),
@@ -603,19 +617,19 @@ class _TicketCta extends StatelessWidget {
                     Text(
                       'NOUVEAU BIG BAG',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 38,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: 6),
                     Text(
                       'Pesée · qualité · validation en 3 taps',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 21,
                         color: Colors.white70,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],

@@ -28,23 +28,23 @@ class ReglagesScreen extends StatelessWidget {
               Text(
                 'Réglages',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
                   color: ink,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 'Préférences locales de cette tablette',
-                style: TextStyle(fontSize: 13, color: mute),
+                style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: card,
                   border: Border.all(color: line),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,13 +52,13 @@ class ReglagesScreen extends StatelessWidget {
                     Text(
                       'THÈME',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                         color: mute,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -69,7 +69,7 @@ class ReglagesScreen extends StatelessWidget {
                             onTap: () => themeProvider.setDark(false),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: _ThemeOption(
                             icon: Icons.dark_mode,
@@ -83,13 +83,13 @@ class ReglagesScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: card,
                   border: Border.all(color: line),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,29 +97,39 @@ class ReglagesScreen extends StatelessWidget {
                     Text(
                       'DONNÉES',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
                         color: mute,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => _confirmReset(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: isDark
-                            ? AppColors.clayOnDark
-                            : AppColors.clay,
-                        side: BorderSide.none,
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 70,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _confirmReset(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: isDark
+                              ? AppColors.clayOnDark
+                              : AppColors.clay,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 28),
+                        label: const Text(
+                          'Réinitialiser les données',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                        ),
                       ),
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      label: const Text('Réinitialiser les données'),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
                       'Big Bag Manager — Delta Recycl · Données stockées localement (SQLite) sur cette tablette.',
-                      style: TextStyle(fontSize: 12, color: mute),
+                      style: TextStyle(fontSize: 16, color: mute, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -135,14 +145,15 @@ class ReglagesScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Effacer toutes les données ?'),
+        title: const Text('Effacer toutes les données ?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
         content: const Text(
           'Cette action est irréversible : tous les Big Bags et chargements seront supprimés.',
+          style: TextStyle(fontSize: 18),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuler'),
+            child: const Text('Annuler', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           ),
           FilledButton(
             onPressed: () async {
@@ -150,7 +161,7 @@ class ReglagesScreen extends StatelessWidget {
               if (ctx.mounted) Navigator.of(ctx).pop();
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.clay),
-            child: const Text('Confirmer'),
+            child: const Text('Confirmer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -184,25 +195,25 @@ class _ThemeOption extends StatelessWidget {
 
     return Material(
       color: selected ? leafTint : card,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 28),
           decoration: BoxDecoration(
-            border: Border.all(color: selected ? leaf : line, width: 2),
-            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: selected ? leaf : line, width: 2.5),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: selected ? leafDark : mute),
-              const SizedBox(height: 6),
+              Icon(icon, size: 36, color: selected ? leafDark : mute),
+              const SizedBox(height: 10),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
                   color: selected ? leafDark : mute,
                 ),
               ),

@@ -8,11 +8,16 @@ class NumericKeypad extends StatelessWidget {
   final VoidCallback onClear;
   final VoidCallback onBackspace;
 
+  /// When true the keypad expands to fill its parent (use inside an Expanded /
+  /// SizedBox with a fixed height). When false it shrink-wraps via GridView.
+  final bool expand;
+
   const NumericKeypad({
     super.key,
     required this.onDigit,
     required this.onClear,
     required this.onBackspace,
+    this.expand = false,
   });
 
   @override
@@ -37,6 +42,53 @@ class NumericKeypad extends StatelessWidget {
         bg: bg ?? card,
         fg: fg ?? ink,
         border: line,
+      );
+    }
+
+    final rows = [
+      [
+        key('7', onTap: () => onDigit('7')),
+        key('8', onTap: () => onDigit('8')),
+        key('9', onTap: () => onDigit('9')),
+      ],
+      [
+        key('4', onTap: () => onDigit('4')),
+        key('5', onTap: () => onDigit('5')),
+        key('6', onTap: () => onDigit('6')),
+      ],
+      [
+        key('1', onTap: () => onDigit('1')),
+        key('2', onTap: () => onDigit('2')),
+        key('3', onTap: () => onDigit('3')),
+      ],
+      [
+        key('C', onTap: onClear, bg: clayTint, fg: clay),
+        key('0', onTap: () => onDigit('0')),
+        key('←', onTap: onBackspace, bg: sunTint, fg: sun),
+      ],
+    ];
+
+    if (expand) {
+      // Fills whatever space is given — place inside Expanded / SizedBox.
+      return Column(
+        children: rows.map((rowKeys) {
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: rowKeys.map((k) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: k,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        }).toList(),
       );
     }
 
@@ -96,7 +148,7 @@ class _KeypadKey extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: AppTextStyles.monoWeight(28, FontWeight.w700, color: fg),
+            style: AppTextStyles.monoWeight(36, FontWeight.w800, color: fg),
           ),
         ),
       ),

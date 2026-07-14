@@ -102,6 +102,12 @@ class AppProvider extends ChangeNotifier {
     return list;
   }
 
+  Future<void> deleteBigBag(int id) async {
+    await _bbDao.delete(id);
+    _bigBags.removeWhere((b) => b.id == id);
+    notifyListeners();
+  }
+
   // ---------------------------------------------------------------------
   // Chargement
   // ---------------------------------------------------------------------

@@ -33,7 +33,7 @@ class StatusPill extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
@@ -42,15 +42,15 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 6),
           Text(
             status.label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: fg,
               letterSpacing: 0.3,

@@ -48,28 +48,32 @@ class BigBagCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Text(
                         bb.code,
+                        overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.monoWeight(
-                          19,
+                          26,
                           FontWeight.w800,
                           color: ink,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     StatusPill(status: bb.status),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   '${fmt.format(bb.poidsBrut)} kg · ${bb.qualite.label}',
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.monoWeight(
-                    14,
+                    19,
                     FontWeight.w600,
                     color: mute,
                   ),
@@ -77,7 +81,8 @@ class BigBagCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   dtFmt.format(bb.createdAt),
-                  style: TextStyle(fontSize: 11, color: dim),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, color: dim),
                 ),
               ],
             ),

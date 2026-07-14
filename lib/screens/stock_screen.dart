@@ -16,7 +16,7 @@ class StockScreen extends StatefulWidget {
 }
 
 class _StockScreenState extends State<StockScreen> {
-  BigBagStatus? _filter = BigBagStatus.stock;
+  BigBagStatus? _filter;
   String _search = '';
 
   @override
@@ -30,128 +30,119 @@ class _StockScreenState extends State<StockScreen> {
     final fmt = NumberFormat('#,##0', 'fr_FR');
 
     final filtered = app.filterBigBags(status: _filter, search: _search);
+    final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+    final cols = isWide && isLandscape ? 4 : 2;
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Stock temps réel',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Vue synchronisée · base locale hors-ligne',
-              style: TextStyle(fontSize: 13, color: mute),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Chercher BB-…',
-                prefixIcon: Icon(Icons.search, size: 18),
-              ),
-              onChanged: (v) => setState(() => _search = v),
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cols = isWide ? 4 : 2;
-                return GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: cols,
-                  childAspectRatio: 1.6,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  children: [
-                    _StatTile(
-                      label: 'En stock',
-                      value: '${app.stockCount}',
-                      unit: 'BB',
-                      accent: true,
-                    ),
-                    _StatTile(
-                      label: 'Poids en stock',
-                      value: fmt.format(app.stockPoidsTotal),
-                      unit: 'kg',
-                    ),
-                    _StatTile(
-                      label: 'Chargés',
-                      value: '${app.chargeCount}',
-                      valueColor: AppColors.sun,
-                    ),
-                    _StatTile(
-                      label: 'Expédiés',
-                      value: '${app.expedieCount}',
-                      valueColor: mute,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+      child: CustomScrollView(
+        slivers: [
+          // ── header (scrolls away with the cards) ─────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _FilterChip(
-                    label: 'Tous',
-                    count: app.bigBags.length,
-                    active: _filter == null,
-                    onTap: () => setState(() => _filter = null),
+                  Text(
+                    'Stock temps réel',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: ink,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'En stock',
-                    count: app.stockCount,
-                    active: _filter == BigBagStatus.stock,
-                    onTap: () => setState(() => _filter = BigBagStatus.stock),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Vue synchronisée · base locale hors-ligne',
+                    style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Chargés',
-                    count: app.chargeCount,
-                    active: _filter == BigBagStatus.charge,
-                    onTap: () => setState(() => _filter = BigBagStatus.charge),
+                  const SizedBox(height: 16),
+                  TextField(
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                    decoration: const InputDecoration(
+                      hintText: 'Chercher BB-…',
+                      hintStyle: TextStyle(fontSize: 22),
+                      prefixIcon: Icon(Icons.search, size: 28),
+                      contentPadding: EdgeInsets.symmetric(vertical: 18),
+                    ),
+                    onChanged: (v) => setState(() => _search = v),
                   ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Expédiés',
-                    count: app.expedieCount,
-                    active: _filter == BigBagStatus.expedie,
-                    onTap: () => setState(() => _filter = BigBagStatus.expedie),
+                  const SizedBox(height: 16),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      mainAxisExtent: 180,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                    ),
+                    itemCount: 4,
+                    itemBuilder: (context, i) {
+                      return [
+                        _StatTile(
+                          label: 'En stock',
+                          value: '${app.stockCount}',
+                          unit: 'BB',
+                          accent: true,
+                        ),
+                        _StatTile(
+                          label: 'Poids en stock',
+                          value: fmt.format(app.stockPoidsTotal),
+                          unit: 'kg',
+                        ),
+                        _StatTile(
+                          label: 'Chargés',
+                          value: '${app.chargeCount}',
+                          valueColor: AppColors.sun,
+                        ),
+                        _StatTile(
+                          label: 'Expédiés',
+                          value: '${app.expedieCount}',
+                          valueColor: mute,
+                        ),
+                      ][i];
+                    },
                   ),
+                  const SizedBox(height: 20),
+                  Divider(
+                    color: AppColors.leaf,
+                    thickness: 3,
+                    height: 3,
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: filtered.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Aucun Big Bag',
-                        style: TextStyle(color: mute),
-                      ),
-                    )
-                  : GridView.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 260,
-                        mainAxisExtent: 108,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, i) => BigBagCard(bb: filtered[i]),
-                    ),
+          ),
+
+          // ── cards grid ───────────────────────────────────────────────
+          if (filtered.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Text(
+                  'Aucun Big Bag',
+                  style: TextStyle(color: mute, fontSize: 22),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => BigBagCard(bb: filtered[i]),
+                  childCount: filtered.length,
+                ),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 380,
+                  mainAxisExtent: 170,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -185,11 +176,11 @@ class _StatTile extends StatelessWidget {
     final ink = isDark ? AppColors.inkOnDark : AppColors.ink;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: accent ? leafTint : card,
-        border: accent ? null : Border.all(color: line),
-        borderRadius: BorderRadius.circular(14),
+        border: accent ? null : Border.all(color: line, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,30 +189,37 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
               color: accent ? leafDark : mute,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                value,
-                style: AppTextStyles.monoWeight(
-                  24,
-                  FontWeight.w800,
-                  color: accent ? leaf : (valueColor ?? ink),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: AppTextStyles.monoWeight(
+                      52,
+                      FontWeight.w800,
+                      color: accent ? leaf : (valueColor ?? ink),
+                    ),
+                  ),
                 ),
               ),
               if (unit != null) ...[
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Text(
                   unit!,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
                     color: accent ? leafDark : mute,
                   ),
                 ),
