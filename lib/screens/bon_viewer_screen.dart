@@ -261,8 +261,8 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                               '${fmt.format(brut)} kg',
                             ),
                             _totalRow(
-                              'Tare totale (3 × ${_bigBags.length})',
-                              '− ${fmt.format(tare)} kg',
+                              'Tare totale (3 x ${_bigBags.length})',
+                              '- ${fmt.format(tare)} kg',
                             ),
                             const Divider(
                               color: AppColors.leaf,

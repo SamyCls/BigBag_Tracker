@@ -165,8 +165,8 @@ class PdfBonGenerator {
                 _totalRow('Nombre de Big Bags', '${bigBags.length}'),
                 _totalRow('Poids brut total', '${fmt.format(brut)} kg'),
                 _totalRow(
-                  'Tare totale (3 × ${bigBags.length})',
-                  '− ${fmt.format(tare)} kg',
+                  'Tare totale (3 x ${bigBags.length})',
+                  '- ${fmt.format(tare)} kg',
                 ),
                 pw.Divider(color: PdfColor.fromInt(0xFF16A34A), thickness: 1.4),
                 _totalRow('Poids net', '${fmt.format(net)} kg', big: true),

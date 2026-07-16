@@ -29,7 +29,7 @@ class BigBagManagerApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
-            title: 'Big Bag Manager',
+            title: 'BigBag',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),

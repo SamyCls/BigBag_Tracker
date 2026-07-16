@@ -1549,7 +1549,7 @@ class _SessionViewState extends State<_SessionView> {
                 Expanded(
                   child: _Tot(
                     label: 'TARE',
-                    value: '− ${fmt.format(tare)}',
+                    value: '- ${fmt.format(tare)}',
                     color: isDark ? AppColors.sunOnDark : AppColors.sun,
                   ),
                 ),
