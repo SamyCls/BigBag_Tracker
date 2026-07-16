@@ -209,6 +209,25 @@ class AppProvider extends ChangeNotifier {
     );
   }
 
+  /// Annule un chargement : remet tous les Big Bags en stock et supprime la session.
+  Future<void> cancelChargement(int id) async {
+    final bbs = bigBagsForChargement(id);
+    for (final bb in bbs) {
+      await _bbDao.updateStatus(bb.id, BigBagStatus.stock, clearChargementId: true);
+      final idx = _bigBags.indexWhere((b) => b.id == bb.id);
+      if (idx != -1) {
+        _bigBags[idx] = _bigBags[idx].copyWith(
+          status: BigBagStatus.stock,
+          clearChargementId: true,
+        );
+      }
+    }
+    _bbByChargement.remove(id);
+    _activeChargements.removeWhere((c) => c.id == id);
+    notifyListeners();
+    await _chDao.delete(id);
+  }
+
   Future<void> pauseChargement(int id) async {
     _updateChargementInList(
       id,

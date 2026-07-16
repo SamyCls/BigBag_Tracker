@@ -1,12 +1,13 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/chargement.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/numeric_keypad.dart';
 import '../utils/toast.dart';
+import '../widgets/bb_code_keypad.dart';
 import 'bon_viewer_screen.dart';
 
 /// Écran Chargement : liste des sessions actives/en pause + création
@@ -485,11 +486,33 @@ class _SetupViewState extends State<_SetupView> {
   final _camionCtrl = TextEditingController();
   final _chauffeurCtrl = TextEditingController();
 
+  final _camionFocus = FocusNode();
+  final _chauffeurFocus = FocusNode();
+  bool _showCamionSuggestions = false;
+  bool _showChauffeurSuggestions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _camionFocus.addListener(() {
+      setState(() {
+        _showCamionSuggestions = _camionFocus.hasFocus;
+      });
+    });
+    _chauffeurFocus.addListener(() {
+      setState(() {
+        _showChauffeurSuggestions = _chauffeurFocus.hasFocus;
+      });
+    });
+  }
+
   @override
   void dispose() {
     _clientCtrl.dispose();
     _camionCtrl.dispose();
     _chauffeurCtrl.dispose();
+    _camionFocus.dispose();
+    _chauffeurFocus.dispose();
     super.dispose();
   }
 
@@ -512,6 +535,366 @@ class _SetupViewState extends State<_SetupView> {
     final pastClients = allClients
         .where((c) => query.isEmpty || c.toLowerCase().contains(query))
         .toList();
+
+    // Autocomplete sources for Camion and Chauffeur
+    final queryCamion = _camionCtrl.text.trim().toLowerCase();
+    final allCamions = {
+      ...app.terminatedChargements.map((c) => c.camion),
+      ...app.activeChargements.map((c) => c.camion),
+    }.where((c) => c != null && c.isNotEmpty).cast<String>().toList();
+    final matchingCamions = allCamions
+        .where((c) => queryCamion.isEmpty || c.toLowerCase().contains(queryCamion))
+        .toList();
+
+    final queryChauffeur = _chauffeurCtrl.text.trim().toLowerCase();
+    final allChauffeurs = {
+      ...app.terminatedChargements.map((c) => c.chauffeur),
+      ...app.activeChargements.map((c) => c.chauffeur),
+    }.where((c) => c != null && c.isNotEmpty).cast<String>().toList();
+    final matchingChauffeurs = allChauffeurs
+        .where((c) => queryChauffeur.isEmpty || c.toLowerCase().contains(queryChauffeur))
+        .toList();
+
+    final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+
+    Widget buildSuggestionsList(
+      List<String> suggestions,
+      TextEditingController controller,
+      FocusNode focusNode,
+    ) {
+      if (suggestions.isEmpty) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.only(top: 4),
+        constraints: const BoxConstraints(maxHeight: 140),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : AppColors.card,
+          border: Border.all(color: line),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListView.builder(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          itemCount: suggestions.length,
+          itemBuilder: (context, index) {
+            final val = suggestions[index];
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  controller.text = val;
+                  controller.selection = TextSelection.collapsed(offset: val.length);
+                  focusNode.unfocus();
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                child: Text(
+                  val,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: ink,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Build responsive form card
+    final mainFormCard = Container(
+      padding: EdgeInsets.all(isLandscape ? 16 : 20),
+      decoration: BoxDecoration(
+        color: card,
+        border: Border.all(color: line),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLandscape) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Column 1: Client
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CLIENT *',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: mute,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _clientCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        inputFormatters: [CapitalizeWordsFormatter()],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Nom du client',
+                          hintStyle: TextStyle(fontSize: 22),
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 14,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      if (pastClients.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: pastClients
+                              .map(
+                                (c) => ActionChip(
+                                  label: Text(
+                                    c,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: leaf,
+                                    ),
+                                  ),
+                                  onPressed: () => setState(() {
+                                    _clientCtrl.text = c;
+                                    _clientCtrl.selection =
+                                        TextSelection.collapsed(offset: c.length);
+                                  }),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                // Column 2: Camion & Chauffeur
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CAMION (OPTIONNEL)',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: mute,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _camionCtrl,
+                        focusNode: _camionFocus,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Immatriculation',
+                          hintStyle: TextStyle(fontSize: 22),
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 14,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      if (_showCamionSuggestions)
+                        buildSuggestionsList(matchingCamions, _camionCtrl, _camionFocus),
+                      const SizedBox(height: 12),
+                      Text(
+                        'CHAUFFEUR (OPTIONNEL)',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: mute,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _chauffeurCtrl,
+                        focusNode: _chauffeurFocus,
+                        textCapitalization: TextCapitalization.words,
+                        inputFormatters: [CapitalizeWordsFormatter()],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Nom du chauffeur',
+                          hintStyle: TextStyle(fontSize: 22),
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 14,
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      if (_showChauffeurSuggestions)
+                        buildSuggestionsList(matchingChauffeurs, _chauffeurCtrl, _chauffeurFocus),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Text(
+              'CLIENT *',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: mute,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _clientCtrl,
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: [CapitalizeWordsFormatter()],
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Nom du client',
+                hintStyle: TextStyle(fontSize: 22),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 14,
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            if (pastClients.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: pastClients
+                    .map(
+                      (c) => ActionChip(
+                        label: Text(
+                          c,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: leaf,
+                          ),
+                        ),
+                        onPressed: () => setState(() {
+                          _clientCtrl.text = c;
+                          _clientCtrl.selection =
+                              TextSelection.collapsed(offset: c.length);
+                        }),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+            const SizedBox(height: 18),
+            Text(
+              'CAMION (OPTIONNEL)',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: mute,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _camionCtrl,
+              focusNode: _camionFocus,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Immatriculation',
+                hintStyle: TextStyle(fontSize: 22),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 14,
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_showCamionSuggestions)
+              buildSuggestionsList(matchingCamions, _camionCtrl, _camionFocus),
+            const SizedBox(height: 18),
+            Text(
+              'CHAUFFEUR (OPTIONNEL)',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: mute,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _chauffeurCtrl,
+              focusNode: _chauffeurFocus,
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: [CapitalizeWordsFormatter()],
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Nom du chauffeur',
+                hintStyle: TextStyle(fontSize: 22),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 14,
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            if (_showChauffeurSuggestions)
+              buildSuggestionsList(matchingChauffeurs, _chauffeurCtrl, _chauffeurFocus),
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: isLandscape ? 64 : 80,
+            child: ElevatedButton.icon(
+              onPressed: _clientCtrl.text.trim().isEmpty
+                  ? null
+                  : () => widget.onStart(
+                      _clientCtrl.text.trim(),
+                      _camionCtrl.text.trim().isEmpty
+                          ? null
+                          : _camionCtrl.text.trim(),
+                      _chauffeurCtrl.text.trim().isEmpty
+                          ? null
+                          : _chauffeurCtrl.text.trim(),
+                    ),
+              icon: const Icon(Icons.play_arrow, size: 28),
+              label: const Text(
+                'DÉMARRER',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -552,158 +935,47 @@ class _SetupViewState extends State<_SetupView> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: card,
-                  border: Border.all(color: line),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CLIENT *',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: mute,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _clientCtrl,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Nom du client',
-                        hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 14,
-                        ),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    if (pastClients.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: pastClients
-                            .map(
-                              (c) => ActionChip(
-                                avatar: Icon(
-                                  Icons.history,
-                                  size: 20,
-                                  color: leaf,
-                                ),
-                                label: Text(
-                                  c,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: leaf,
-                                  ),
-                                ),
-                                onPressed: () => setState(() {
-                                  _clientCtrl.text = c;
-                                  _clientCtrl.selection =
-                                      TextSelection.collapsed(offset: c.length);
-                                }),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    Text(
-                      'CAMION (OPTIONNEL)',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: mute,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _camionCtrl,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Immatriculation',
-                        hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 14,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'CHAUFFEUR (OPTIONNEL)',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: mute,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _chauffeurCtrl,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: 'Nom du chauffeur',
-                        hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(
-                          vertical: 18,
-                          horizontal: 14,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 80,
-                      child: ElevatedButton.icon(
-                        onPressed: _clientCtrl.text.trim().isEmpty
-                            ? null
-                            : () => widget.onStart(
-                                _clientCtrl.text.trim(),
-                                _camionCtrl.text.trim().isEmpty
-                                    ? null
-                                    : _camionCtrl.text.trim(),
-                                _chauffeurCtrl.text.trim().isEmpty
-                                    ? null
-                                    : _chauffeurCtrl.text.trim(),
-                              ),
-                        icon: const Icon(Icons.play_arrow, size: 28),
-                        label: const Text(
-                          'DÉMARRER',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              constraints: BoxConstraints(maxWidth: isLandscape ? 880 : 560),
+              child: mainFormCard,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TextInputFormatter to capitalize the first letter of every word
+// ---------------------------------------------------------------------------
+class CapitalizeWordsFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) return newValue;
+
+    final text = newValue.text;
+    final buffer = StringBuffer();
+    bool capitalizeNext = true;
+
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (char == ' ') {
+        buffer.write(char);
+        capitalizeNext = true;
+      } else if (capitalizeNext) {
+        buffer.write(char.toUpperCase());
+        capitalizeNext = false;
+      } else {
+        buffer.write(char);
+      }
+    }
+
+    final formattedText = buffer.toString();
+    return newValue.copyWith(
+      text: formattedText,
+      selection: newValue.selection,
     );
   }
 }
@@ -727,11 +999,41 @@ class _SessionView extends StatefulWidget {
 }
 
 class _SessionViewState extends State<_SessionView> {
-  String _input = '';
+  bool _showAddPad = false;
+  String _digits = '000000';
+
+  void _onKeyTap(String digit) {
+    setState(() {
+      final trimmed = (_digits + digit).substring(1);
+      _digits = trimmed.padLeft(6, '0');
+    });
+  }
+
+  void _onBackspace() {
+    setState(() {
+      if (_digits == '000000') return;
+      _digits = '0${_digits.substring(0, _digits.length - 1)}';
+    });
+  }
+
+  void _onClear() {
+    setState(() {
+      _digits = '000000';
+    });
+  }
+
+  void _toggleAddPad() {
+    setState(() {
+      _showAddPad = !_showAddPad;
+      if (!_showAddPad) {
+        _digits = '000000';
+      }
+    });
+  }
 
   Future<void> _tryAdd(AppProvider app, [String? code]) async {
-    final rawCode = code ?? _input;
-    if (rawCode.isEmpty) return;
+    final rawCode = code ?? 'BB-$_digits';
+    if (rawCode == 'BB-000000' && code == null) return;
     final result = await app.addBigBagToChargement(
       widget.chargement.id,
       rawCode,
@@ -740,10 +1042,9 @@ class _SessionViewState extends State<_SessionView> {
     switch (result) {
       case AddBBResult.ok:
         showAppToast(context, '${app.normalizeCode(rawCode)} ajouté');
-        if (code == null ||
-            app.normalizeCode(_input) == app.normalizeCode(code)) {
-          setState(() => _input = '');
-        }
+        setState(() {
+          _digits = '000000';
+        });
         break;
       case AddBBResult.notFound:
         showAppToast(context, 'Big Bag introuvable', isError: true);
@@ -778,188 +1079,13 @@ class _SessionViewState extends State<_SessionView> {
     final card = isDark ? AppColors.cardDark : AppColors.card;
     final line = isDark ? AppColors.lineDark : AppColors.line;
 
-    final preview = _input.isEmpty ? null : app.normalizeCode(_input);
-    final isWide = MediaQuery.of(context).size.width >= 980;
-
-    // Stock bags not yet loaded into this chargement → suggestion cards
     final stockSuggestions = app
         .filterBigBags(status: BigBagStatus.stock)
         .where((b) => !bbs.any((loaded) => loaded.id == b.id))
         .toList();
 
-    Widget buildAddPanel({required bool expandKeypad}) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: card,
-          border: Border.all(color: line),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'AJOUTER BIG BAG',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: mute,
-                letterSpacing: 0.4,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: leaf, width: 2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                preview ?? 'BB-______',
-                style: AppTextStyles.monoWeight(
-                  52,
-                  FontWeight.w800,
-                  color: preview == null ? mute.withValues(alpha: 0.5) : ink,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (expandKeypad)
-              Expanded(
-                child: NumericKeypad(
-                  expand: true,
-                  onDigit: (d) => setState(() {
-                    if (_input.length < 6) _input += d;
-                  }),
-                  onClear: () => setState(() => _input = ''),
-                  onBackspace: () => setState(() {
-                    if (_input.isNotEmpty) {
-                      _input = _input.substring(0, _input.length - 1);
-                    }
-                  }),
-                ),
-              )
-            else
-              SizedBox(
-                height: 290,
-                child: NumericKeypad(
-                  expand: true,
-                  onDigit: (d) => setState(() {
-                    if (_input.length < 6) _input += d;
-                  }),
-                  onClear: () => setState(() => _input = ''),
-                  onBackspace: () => setState(() {
-                    if (_input.isNotEmpty) {
-                      _input = _input.substring(0, _input.length - 1);
-                    }
-                  }),
-                ),
-              ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 70,
-              child: ElevatedButton.icon(
-                onPressed: _input.isEmpty ? null : () => _tryAdd(app),
-                icon: const Icon(Icons.add, size: 28),
-                label: const Text(
-                  'AJOUTER',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget buildListPanel({required bool expandList}) {
-      final listContent = bbs.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Text(
-                  'Ajoutez votre premier Big Bag',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontStyle: FontStyle.italic,
-                    color: mute,
-                  ),
-                ),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              physics: expandList ? null : const NeverScrollableScrollPhysics(),
-              shrinkWrap: !expandList,
-              itemCount: bbs.length,
-              itemBuilder: (context, i) {
-                final idx = bbs.length - 1 - i;
-                final bb = bbs[idx];
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 36,
-                        child: Text(
-                          '${idx + 1}',
-                          style: AppTextStyles.monoWeight(
-                            18,
-                            FontWeight.w700,
-                            color: mute,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          bb.code,
-                          style: AppTextStyles.monoWeight(
-                            24,
-                            FontWeight.w800,
-                            color: ink,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${fmt.format(bb.poidsBrut)} kg',
-                        style: AppTextStyles.monoWeight(
-                          20,
-                          FontWeight.w600,
-                          color: mute,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      TextButton.icon(
-                        onPressed: () =>
-                            app.removeBigBagFromChargement(ch.id, bb.id),
-                        icon: const Icon(Icons.delete_outline, size: 22),
-                        label: const Text(
-                          'Retirer',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: isDark
-                              ? AppColors.clayOnDark
-                              : AppColors.clay,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
+    Widget buildListPanel() {
+      final dividerColor = card == AppColors.cardDark ? AppColors.lineDark : AppColors.line;
 
       return Container(
         decoration: BoxDecoration(
@@ -969,9 +1095,8 @@ class _SessionViewState extends State<_SessionView> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // suggestions row
+            // ── PINNED: Stock suggestions ──────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Text(
@@ -986,9 +1111,8 @@ class _SessionViewState extends State<_SessionView> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
             SizedBox(
-              height: 110,
+              height: 130,
               child: stockSuggestions.isEmpty
                   ? Center(
                       child: Text(
@@ -1001,15 +1125,14 @@ class _SessionViewState extends State<_SessionView> {
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                       scrollDirection: Axis.horizontal,
                       itemCount: stockSuggestions.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (context, i) {
                         final b = stockSuggestions[i];
                         final isSelected =
-                            _input.isNotEmpty &&
-                            app.normalizeCode(_input) == b.code;
+                            _digits != '000000' && 'BB-$_digits' == b.code;
                         return _StockSuggestionCard(
                           bb: b,
                           selected: isSelected,
@@ -1023,39 +1146,249 @@ class _SessionViewState extends State<_SessionView> {
                       },
                     ),
             ),
-            Divider(
-              height: 1,
-              color: card == AppColors.cardDark
-                  ? AppColors.lineDark
-                  : AppColors.line,
-            ),
-            // header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'BIG BAGS CHARGÉS',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: mute,
-                      letterSpacing: 0.4,
+            Divider(height: 1, color: dividerColor),
+
+            // ── SCROLLABLE: add pad + loaded list ─────────────────────
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // ── Add pad ──────────────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _toggleAddPad,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: _showAddPad ? leaf : line,
+                                          width: _showAddPad ? 2 : 1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: isDark
+                                          ? AppColors.cardDark
+                                          : AppColors.card,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.add_box_outlined,
+                                            size: 22,
+                                            color:
+                                                _showAddPad ? leaf : mute),
+                                        const SizedBox(width: 10),
+                                        if (_showAddPad) ...[
+                                          Text(
+                                            'BB-',
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
+                                                color: ink),
+                                          ),
+                                          ...List.generate(6, (i) {
+                                            final isZero = _digits[i] == '0' &&
+                                                !_digits
+                                                    .substring(0, i + 1)
+                                                    .contains(
+                                                        RegExp(r'[1-9]'));
+                                            return Text(
+                                              _digits[i],
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w800,
+                                                color: isZero
+                                                    ? mute.withValues(
+                                                        alpha: 0.45)
+                                                    : ink,
+                                                fontFamily: 'monospace',
+                                              ),
+                                            );
+                                          }),
+                                        ] else ...[
+                                          Text(
+                                            'Saisir numéro du sac (ex: 42)',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w500,
+                                              color: mute,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                height: 58,
+                                child: ElevatedButton.icon(
+                                  onPressed: (_digits == '000000')
+                                      ? null
+                                      : () => _tryAdd(app),
+                                  icon: const Icon(Icons.add, size: 22),
+                                  label: const Text(
+                                    'AJOUTER',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_showAddPad) ...[
+                            const SizedBox(height: 12),
+                            BbCodeKeypad(
+                              onKeyTap: _onKeyTap,
+                              onClear: _onClear,
+                              onBackspace: _onBackspace,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                  Text(
-                    'Plus récent en haut',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: mute,
-                      fontWeight: FontWeight.w500,
+                  SliverToBoxAdapter(
+                      child: Divider(height: 1, color: dividerColor)),
+
+                  // ── Loaded BB header ──────────────────────────────────
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'BIG BAGS CHARGÉS',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: mute,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                          Text(
+                            'Plus récent en haut',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: mute,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
+                  // ── Loaded BB list ────────────────────────────────────
+                  if (bbs.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Text(
+                            'Ajoutez votre premier Big Bag',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontStyle: FontStyle.italic,
+                              color: mute,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) {
+                          final idx = bbs.length - 1 - i;
+                          final bb = bbs[idx];
+                          return Container(
+                            margin:
+                                const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 14),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 36,
+                                  child: Text(
+                                    '${idx + 1}',
+                                    style: AppTextStyles.monoWeight(
+                                      18,
+                                      FontWeight.w700,
+                                      color: mute,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    bb.code,
+                                    style: AppTextStyles.monoWeight(
+                                      24,
+                                      FontWeight.w800,
+                                      color: ink,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${fmt.format(bb.poidsBrut)} kg',
+                                  style: AppTextStyles.monoWeight(
+                                    20,
+                                    FontWeight.w600,
+                                    color: mute,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      app.removeBigBagFromChargement(
+                                          ch.id, bb.id),
+                                  icon: const Icon(Icons.delete_outline,
+                                      size: 22),
+                                  label: const Text(
+                                    'Retirer',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: isDark
+                                        ? AppColors.clayOnDark
+                                        : AppColors.clay,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        childCount: bbs.length,
+                      ),
+                    ),
                 ],
               ),
             ),
-            if (expandList) Expanded(child: listContent) else listContent,
           ],
         ),
       );
@@ -1104,6 +1437,53 @@ class _SessionViewState extends State<_SessionView> {
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Annuler le chargement ?'),
+                        content: const Text(
+                          'Tous les Big Bags seront remis en stock et ce chargement sera supprimé définitivement.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Non'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: const Text('Oui, annuler'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true && mounted) {
+                      await context.read<AppProvider>().cancelChargement(ch.id);
+                      widget.onBack();
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text(
+                    'ANNULER',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
                     if (ch.status == ChargementStatus.pause) {
                       await app.resumeChargement(ch.id);
                     } else {
@@ -1115,26 +1495,26 @@ class _SessionViewState extends State<_SessionView> {
                     ch.status == ChargementStatus.pause
                         ? Icons.play_arrow
                         : Icons.pause,
-                    size: 24,
+                    size: 18,
                   ),
                   label: Text(
                     ch.status == ChargementStatus.pause ? 'REPRENDRE' : 'PAUSE',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: bbs.isEmpty
                       ? null
@@ -1142,15 +1522,15 @@ class _SessionViewState extends State<_SessionView> {
                           final finished = await app.finishChargement(ch.id);
                           widget.onFinished(finished.id);
                         },
-                  icon: const Icon(Icons.check, size: 26),
+                  icon: const Icon(Icons.check, size: 18),
                   label: const Text(
                     'TERMINER',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -1160,56 +1540,33 @@ class _SessionViewState extends State<_SessionView> {
               ],
             ),
             const SizedBox(height: 12),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: isWide ? 4 : 2,
-              childAspectRatio: isWide ? 1.8 : 2.2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+            Row(
               children: [
-                _Tot(label: 'NB BIG BAGS', value: '${bbs.length}'),
-                _Tot(label: 'POIDS BRUT', value: '${fmt.format(brut)} kg'),
-                _Tot(
-                  label: 'TARE (3kg × BB)',
-                  value: '− ${fmt.format(tare)}',
-                  color: isDark ? AppColors.sunOnDark : AppColors.sun,
+                Expanded(child: _Tot(label: 'NB BIG BAGS', value: '${bbs.length}')),
+                const SizedBox(width: 8),
+                Expanded(child: _Tot(label: 'POIDS BRUT', value: '${fmt.format(brut)} kg')),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Tot(
+                    label: 'TARE',
+                    value: '− ${fmt.format(tare)}',
+                    color: isDark ? AppColors.sunOnDark : AppColors.sun,
+                  ),
                 ),
-                _Tot(
-                  label: 'POIDS NET',
-                  value: '${fmt.format(net)} kg',
-                  filled: true,
-                  leaf: leaf,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Tot(
+                    label: 'POIDS NET',
+                    value: '${fmt.format(net)} kg',
+                    filled: true,
+                    leaf: leaf,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: isWide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: buildAddPanel(expandKeypad: true),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 5,
-                          child: buildListPanel(expandList: true),
-                        ),
-                      ],
-                    )
-                  : SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          buildAddPanel(expandKeypad: false),
-                          const SizedBox(height: 12),
-                          buildListPanel(expandList: false),
-                        ],
-                      ),
-                    ),
+              child: buildListPanel(),
             ),
           ],
         ),
@@ -1271,7 +1628,9 @@ class _Tot extends StatelessWidget {
               style: AppTextStyles.monoWeight(
                 26,
                 FontWeight.w800,
-                color: filled ? Colors.white : (color ?? ink),
+                color: filled
+                    ? Colors.white
+                    : (color ?? ink),
               ),
             ),
           ),
@@ -1280,10 +1639,6 @@ class _Tot extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Stock suggestion card — tappable, shows BB code + weight + quality
-// ---------------------------------------------------------------------------
 
 class _StockSuggestionCard extends StatelessWidget {
   final BigBag bb;
@@ -1309,10 +1664,14 @@ class _StockSuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0', 'fr_FR');
-    final leafTint = leaf.withValues(alpha: 0.12);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardBg = leaf.withValues(alpha: selected ? 0.18 : 0.08);
+    final borderColor = leaf.withValues(alpha: selected ? 1.0 : 0.3);
+    final textCodeColor = isDark ? AppColors.leafOnDark : AppColors.leafDark;
 
     return Material(
-      color: selected ? leafTint : card,
+      color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -1322,7 +1681,7 @@ class _StockSuggestionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             border: Border.all(
-              color: selected ? leaf : line,
+              color: borderColor,
               width: selected ? 2.5 : 1.5,
             ),
             borderRadius: BorderRadius.circular(14),
@@ -1336,7 +1695,7 @@ class _StockSuggestionCard extends StatelessWidget {
                 style: AppTextStyles.monoWeight(
                   22,
                   FontWeight.w800,
-                  color: selected ? leaf : ink,
+                  color: textCodeColor,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1345,7 +1704,7 @@ class _StockSuggestionCard extends StatelessWidget {
                 style: AppTextStyles.monoWeight(
                   17,
                   FontWeight.w600,
-                  color: mute,
+                  color: textCodeColor.withValues(alpha: 0.8),
                 ),
               ),
               Text(
@@ -1353,7 +1712,7 @@ class _StockSuggestionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: selected ? leaf : mute,
+                  color: textCodeColor.withValues(alpha: 0.85),
                 ),
               ),
             ],
@@ -1363,3 +1722,5 @@ class _StockSuggestionCard extends StatelessWidget {
     );
   }
 }
+
+

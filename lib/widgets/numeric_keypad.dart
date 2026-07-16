@@ -43,9 +43,9 @@ class NumericKeypad extends StatelessWidget {
 
     final rows = [
       [
-        key('7', onTap: () => onDigit('7')),
-        key('8', onTap: () => onDigit('8')),
-        key('9', onTap: () => onDigit('9')),
+        key('1', onTap: () => onDigit('1')),
+        key('2', onTap: () => onDigit('2')),
+        key('3', onTap: () => onDigit('3')),
       ],
       [
         key('4', onTap: () => onDigit('4')),
@@ -53,9 +53,9 @@ class NumericKeypad extends StatelessWidget {
         key('6', onTap: () => onDigit('6')),
       ],
       [
-        key('1', onTap: () => onDigit('1')),
-        key('2', onTap: () => onDigit('2')),
-        key('3', onTap: () => onDigit('3')),
+        key('7', onTap: () => onDigit('7')),
+        key('8', onTap: () => onDigit('8')),
+        key('9', onTap: () => onDigit('9')),
       ],
       [
         key(',', onTap: () => onDigit(',')),
@@ -96,15 +96,15 @@ class NumericKeypad extends StatelessWidget {
       crossAxisSpacing: 8,
       childAspectRatio: 1.6,
       children: [
-        key('7', onTap: () => onDigit('7')),
-        key('8', onTap: () => onDigit('8')),
-        key('9', onTap: () => onDigit('9')),
-        key('4', onTap: () => onDigit('4')),
-        key('5', onTap: () => onDigit('5')),
-        key('6', onTap: () => onDigit('6')),
         key('1', onTap: () => onDigit('1')),
         key('2', onTap: () => onDigit('2')),
         key('3', onTap: () => onDigit('3')),
+        key('4', onTap: () => onDigit('4')),
+        key('5', onTap: () => onDigit('5')),
+        key('6', onTap: () => onDigit('6')),
+        key('7', onTap: () => onDigit('7')),
+        key('8', onTap: () => onDigit('8')),
+        key('9', onTap: () => onDigit('9')),
         key(',', onTap: () => onDigit(',')),
         key('0', onTap: () => onDigit('0')),
         key('←', onTap: onBackspace, bg: sunTint, fg: sun),

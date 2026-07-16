@@ -1,12 +1,12 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../models/chargement.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/pdf_bon.dart';
+import '../utils/share_bon.dart';
 
 /// Affiche le bon d'expédition généré automatiquement à la fin d'un
 /// chargement, avec bouton Imprimer/PDF (utilise le plugin `printing`).
@@ -106,17 +106,12 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () async {
-                      final doc = await PdfBonGenerator.build(
-                        chargement: ch,
-                        bigBags: _bigBags,
-                      );
-                      await Printing.layoutPdf(
-                        onLayout: (format) async => doc.save(),
-                      );
-                    },
-                    icon: const Icon(Icons.print, size: 16),
-                    label: const Text('IMPRIMER / PDF'),
+                    onPressed: () => shareBon(
+                      chargement: ch,
+                      bigBags: _bigBags,
+                    ),
+                    icon: const Icon(Icons.share, size: 16),
+                    label: const Text('PARTAGER'),
                   ),
                 ],
               ),
@@ -135,21 +130,10 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                         children: [
                           Row(
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.ink,
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'DR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
+                              Image.asset(
+                                'assets/icon/logorecycle.png',
+                                width: 80,
+                                height: 80,
                               ),
                               const SizedBox(width: 12),
                               const Column(

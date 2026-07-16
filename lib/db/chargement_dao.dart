@@ -115,4 +115,9 @@ class ChargementDao {
       return Chargement.fromMap(rows.first);
     });
   }
+
+  Future<void> delete(int id) async {
+    final db = await _db;
+    await db.delete('chargements', where: 'id = ?', whereArgs: [id]);
+  }
 }

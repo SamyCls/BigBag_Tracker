@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/bb_code_keypad.dart';
 
 /// Écran Stock : vue temps réel des Big Bags, filtres rapides, recherche
 /// et totaux (nombre, poids en stock).
@@ -20,29 +21,31 @@ class _StockScreenState extends State<StockScreen> {
   DateTime? _selectedDate;
   bool _showSearchPad = false;
 
+  // Right-to-left calculator-style digit buffer (always 6 chars, zero-padded)
+  String _digits = '000000';
+
   void _onKeyTap(String digit) {
     setState(() {
-      if (_search.isEmpty || _search == 'BB-') {
-        _search = 'BB-$digit';
-      } else {
-        _search += digit;
-      }
+      // Shift digits left, append new digit on right
+      final trimmed = (_digits + digit).substring(1);
+      _digits = trimmed.padLeft(6, '0');
+      _search = 'BB-$_digits';
     });
   }
 
   void _onBackspace() {
     setState(() {
-      if (_search.length <= 3) {
-        _search = 'BB-';
-      } else {
-        _search = _search.substring(0, _search.length - 1);
-      }
+      // Shift digits right, prepend 0 on left
+      if (_digits == '000000') return;
+      _digits = '0${_digits.substring(0, _digits.length - 1)}';
+      _search = 'BB-$_digits';
     });
   }
 
   void _onClear() {
     setState(() {
-      _search = 'BB-';
+      _digits = '000000';
+      _search = 'BB-$_digits';
     });
   }
 
@@ -50,14 +53,15 @@ class _StockScreenState extends State<StockScreen> {
     setState(() {
       _showSearchPad = !_showSearchPad;
       if (_showSearchPad) {
-        if (_search.isEmpty) {
-          _search = 'BB-';
-        }
+        _digits = '000000';
+        _search = 'BB-$_digits';
       } else {
+        _digits = '000000';
         _search = '';
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +151,7 @@ class _StockScreenState extends State<StockScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Search & Date Row (Responsive)
+                   // Search row — same for wide and narrow
                   if (isWide)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,35 +171,52 @@ class _StockScreenState extends State<StockScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.search, size: 22, color: mute),
+                                      Icon(Icons.search, size: 22, color: _showSearchPad ? leaf : mute),
                                       const SizedBox(width: 10),
-                                      Text(
-                                        _search.isEmpty ? 'Chercher BB-...' : _search,
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w500,
-                                          color: _search.isEmpty ? mute : ink,
+                                      if (_showSearchPad) ...[
+                                        // Styled zero-padded display: zeros muted, typed digits bold
+                                        Text('BB-', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: ink)),
+                                        ...List.generate(6, (i) {
+                                          final isZero = _digits[i] == '0' && !_digits.substring(0, i + 1).contains(RegExp(r'[1-9]'));
+                                          return Text(
+                                            _digits[i],
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w800,
+                                              color: isZero ? mute.withValues(alpha: 0.45) : ink,
+                                              fontFamily: 'monospace',
+                                            ),
+                                          );
+                                        }),
+                                      ] else ...[
+                                        Text(
+                                          _search.isEmpty ? 'Chercher BB-...' : _search,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w500,
+                                            color: _search.isEmpty ? mute : ink,
+                                          ),
                                         ),
-                                      ),
-                                      if (_search.isNotEmpty) ...[
-                                        const Spacer(),
+                                      ],
+                                      const Spacer(),
+                                      if (_showSearchPad || _search.isNotEmpty)
                                         GestureDetector(
                                           onTap: () {
                                             setState(() {
                                               _search = '';
+                                              _digits = '000000';
                                               _showSearchPad = false;
                                             });
                                           },
                                           child: Icon(Icons.clear, size: 20, color: mute),
                                         ),
-                                      ],
                                     ],
                                   ),
                                 ),
                               ),
                               if (_showSearchPad) ...[
                                 const SizedBox(height: 10),
-                                _SearchKeypad(
+                                BbCodeKeypad(
                                   onKeyTap: _onKeyTap,
                                   onClear: _onClear,
                                   onBackspace: _onBackspace,
@@ -203,11 +224,6 @@ class _StockScreenState extends State<StockScreen> {
                               ],
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        _DateFilterButton(
-                          selectedDate: _selectedDate,
-                          onChanged: (date) => setState(() => _selectedDate = date),
                         ),
                       ],
                     )
@@ -226,119 +242,175 @@ class _StockScreenState extends State<StockScreen> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.search, size: 22, color: mute),
+                                Icon(Icons.search, size: 22, color: _showSearchPad ? leaf : mute),
                                 const SizedBox(width: 10),
-                                Text(
-                                  _search.isEmpty ? 'Chercher BB-...' : _search,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: _search.isEmpty ? mute : ink,
+                                if (_showSearchPad) ...[
+                                  Text('BB-', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: ink)),
+                                  ...List.generate(6, (i) {
+                                    final isZero = _digits[i] == '0' && !_digits.substring(0, i + 1).contains(RegExp(r'[1-9]'));
+                                    return Text(
+                                      _digits[i],
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        color: isZero ? mute.withValues(alpha: 0.45) : ink,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    );
+                                  }),
+                                ] else ...[
+                                  Text(
+                                    _search.isEmpty ? 'Chercher BB-...' : _search,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                      color: _search.isEmpty ? mute : ink,
+                                    ),
                                   ),
-                                ),
-                                if (_search.isNotEmpty) ...[
-                                  const Spacer(),
+                                ],
+                                const Spacer(),
+                                if (_showSearchPad || _search.isNotEmpty)
                                   GestureDetector(
                                     onTap: () {
                                       setState(() {
                                         _search = '';
+                                        _digits = '000000';
                                         _showSearchPad = false;
                                       });
                                     },
                                     child: Icon(Icons.clear, size: 20, color: mute),
                                   ),
-                                ],
                               ],
                             ),
                           ),
                         ),
                         if (_showSearchPad) ...[
                           const SizedBox(height: 10),
-                          _SearchKeypad(
+                          BbCodeKeypad(
                             onKeyTap: _onKeyTap,
                             onClear: _onClear,
                             onBackspace: _onBackspace,
                           ),
                         ],
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: _DateFilterButton(
-                            selectedDate: _selectedDate,
-                            onChanged: (date) => setState(() => _selectedDate = date),
-                          ),
-                        ),
                       ],
                     ),
                   const SizedBox(height: 20),
 
                   // ── Stat tiles ─────────────────────────────────────────
-                  if (isWide) ...[
-                    Row(
-                      children: [
-                        Expanded(child: _StatTile(label: 'EN STOCK', value: '${app.stockCount}', unit: 'BB', fmt: fmt)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatTile(label: 'POIDS EN STOCK', value: fmt.format(app.stockPoidsTotal), unit: 'kg', fmt: fmt)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatTile(label: 'CHARGÉS', value: '${app.chargeCount}', unit: 'BB', fmt: fmt)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatTile(label: 'EXPÉDIÉS', value: '${app.expedieCount}', unit: 'BB', fmt: fmt)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ] else ...[
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 2.2,
-                      children: [
-                        _StatTile(label: 'EN STOCK', value: '${app.stockCount}', unit: 'BB', fmt: fmt),
-                        _StatTile(label: 'POIDS EN STOCK', value: fmt.format(app.stockPoidsTotal), unit: 'kg', fmt: fmt),
-                        _StatTile(label: 'CHARGÉS', value: '${app.chargeCount}', unit: 'BB', fmt: fmt),
-                        _StatTile(label: 'EXPÉDIÉS', value: '${app.expedieCount}', unit: 'BB', fmt: fmt),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // ── Filter chips ────────────────────────────────────────
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _FilterChip(
-                          label: 'TOUT',
-                          count: dateFilteredTotal,
-                          active: _filter == null,
-                          onTap: () => setState(() => _filter = null),
-                        ),
-                        const SizedBox(width: 10),
-                        _FilterChip(
-                          label: 'EN STOCK',
-                          count: dateFilteredStock,
-                          active: _filter == BigBagStatus.stock,
-                          onTap: () => setState(() => _filter = BigBagStatus.stock),
-                        ),
-                        const SizedBox(width: 10),
-                        _FilterChip(
-                          label: 'CHARGÉ',
-                          count: dateFilteredCharge,
-                          active: _filter == BigBagStatus.charge,
-                          onTap: () => setState(() => _filter = BigBagStatus.charge),
-                        ),
-                        const SizedBox(width: 10),
-                        _FilterChip(
-                          label: 'EXPÉDIÉ',
-                          count: dateFilteredExpedie,
-                          active: _filter == BigBagStatus.expedie,
-                          onTap: () => setState(() => _filter = BigBagStatus.expedie),
-                        ),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      Expanded(child: _StatTile(label: 'EN STOCK', value: '${app.stockCount}', unit: 'BB', fmt: fmt, accentColor: AppColors.leaf)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _StatTile(label: 'POIDS', value: fmt.format(app.stockPoidsTotal), unit: 'kg', fmt: fmt, accentColor: AppColors.sun)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _StatTile(label: 'CHARGÉS', value: '${app.chargeCount}', unit: 'BB', fmt: fmt, accentColor: const Color(0xFF3B82F6))),
+                      const SizedBox(width: 8),
+                      Expanded(child: _StatTile(label: 'EXPÉDIÉS', value: '${app.expedieCount}', unit: 'BB', fmt: fmt, accentColor: AppColors.clay)),
+                    ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // ── Filter chips + Date button ──────────────────────────
+                  if (isWide)
+                    // Wide: chips left, date right in one row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _FilterChip(
+                                  label: 'TOUT',
+                                  count: dateFilteredTotal,
+                                  active: _filter == null,
+                                  onTap: () => setState(() => _filter = null),
+                                ),
+                                const SizedBox(width: 10),
+                                _FilterChip(
+                                  label: 'EN STOCK',
+                                  count: dateFilteredStock,
+                                  active: _filter == BigBagStatus.stock,
+                                  onTap: () => setState(() => _filter = BigBagStatus.stock),
+                                ),
+                                const SizedBox(width: 10),
+                                _FilterChip(
+                                  label: 'CHARGÉ',
+                                  count: dateFilteredCharge,
+                                  active: _filter == BigBagStatus.charge,
+                                  onTap: () => setState(() => _filter = BigBagStatus.charge),
+                                ),
+                                const SizedBox(width: 10),
+                                _FilterChip(
+                                  label: 'EXPÉDIÉ',
+                                  count: dateFilteredExpedie,
+                                  active: _filter == BigBagStatus.expedie,
+                                  onTap: () => setState(() => _filter = BigBagStatus.expedie),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _DateFilterButton(
+                          selectedDate: _selectedDate,
+                          onChanged: (date) => setState(() => _selectedDate = date),
+                        ),
+                      ],
+                    )
+                  else
+                    // Narrow: small compact chips left, date button right — all in one row
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _FilterChip(
+                                  label: 'TOUT',
+                                  count: dateFilteredTotal,
+                                  active: _filter == null,
+                                  onTap: () => setState(() => _filter = null),
+                                  compact: true,
+                                ),
+                                const SizedBox(width: 6),
+                                _FilterChip(
+                                  label: 'EN STOCK',
+                                  count: dateFilteredStock,
+                                  active: _filter == BigBagStatus.stock,
+                                  onTap: () => setState(() => _filter = BigBagStatus.stock),
+                                  compact: true,
+                                ),
+                                const SizedBox(width: 6),
+                                _FilterChip(
+                                  label: 'CHARGÉ',
+                                  count: dateFilteredCharge,
+                                  active: _filter == BigBagStatus.charge,
+                                  onTap: () => setState(() => _filter = BigBagStatus.charge),
+                                  compact: true,
+                                ),
+                                const SizedBox(width: 6),
+                                _FilterChip(
+                                  label: 'EXPÉDIÉ',
+                                  count: dateFilteredExpedie,
+                                  active: _filter == BigBagStatus.expedie,
+                                  onTap: () => setState(() => _filter = BigBagStatus.expedie),
+                                  compact: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _DateFilterButton(
+                          selectedDate: _selectedDate,
+                          onChanged: (date) => setState(() => _selectedDate = date),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 20),
 
                   // ── Table Header ──────────────────────────────────────
@@ -387,12 +459,33 @@ class _StockScreenState extends State<StockScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final bb = filtered[i];
+                      final isDarkRow = isDark;
+                      Color rowBg;
+                      Color codeColor;
+                      switch (bb.status) {
+                        case BigBagStatus.stock:
+                          rowBg = isDarkRow
+                              ? AppColors.leafOnDark.withValues(alpha: 0.08)
+                              : AppColors.leafTint.withValues(alpha: 0.5);
+                          codeColor = isDarkRow ? AppColors.leafOnDark : AppColors.leafDark;
+                        case BigBagStatus.charge:
+                          rowBg = isDarkRow
+                              ? AppColors.sunOnDark.withValues(alpha: 0.08)
+                              : AppColors.sunTint.withValues(alpha: 0.5);
+                          codeColor = isDarkRow ? AppColors.sunOnDark : AppColors.sun;
+                        case BigBagStatus.expedie:
+                          rowBg = isDarkRow
+                              ? AppColors.clayOnDark.withValues(alpha: 0.08)
+                              : AppColors.clayTint.withValues(alpha: 0.5);
+                          codeColor = isDarkRow ? AppColors.clayOnDark : AppColors.clay;
+                      }
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
+                          color: rowBg,
                           border: Border(
                             bottom: BorderSide(color: line, width: 0.8),
                           ),
@@ -406,18 +499,18 @@ class _StockScreenState extends State<StockScreen> {
                                 style: AppTextStyles.monoWeight(
                                   20,
                                   FontWeight.w800,
-                                  color: ink,
+                                  color: codeColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Expanded(
                               flex: flexes[1],
-                              child: cell('${bb.poidsBrut.toStringAsFixed(0)} kg'),
+                              child: cell('${bb.poidsBrut.toStringAsFixed(0)} kg', color: codeColor.withValues(alpha: 0.85)),
                             ),
                             Expanded(
                               flex: flexes[2],
-                              child: cell(dateFmt.format(bb.createdAt)),
+                              child: cell(dateFmt.format(bb.createdAt), color: codeColor.withValues(alpha: 0.8)),
                             ),
                             Expanded(
                               flex: flexes[3],
@@ -443,27 +536,30 @@ class _StatTile extends StatelessWidget {
   final String value;
   final String unit;
   final NumberFormat fmt;
+  final Color accentColor;
 
   const _StatTile({
     required this.label,
     required this.value,
     required this.unit,
     required this.fmt,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final card = isDark ? AppColors.cardDark : AppColors.card;
-    final line = isDark ? AppColors.lineDark : AppColors.line;
-    final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
-    final ink = isDark ? AppColors.inkOnDark : AppColors.ink;
+
+    // Derive tint from accent
+    final cardBg = accentColor.withValues(alpha: isDark ? 0.12 : 0.08);
+    final borderColor = accentColor.withValues(alpha: isDark ? 0.3 : 0.25);
+
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: card,
-        border: Border.all(color: line),
+        color: cardBg,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -474,7 +570,7 @@ class _StatTile extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: mute,
+              color: accentColor.withValues(alpha: isDark ? 0.8 : 0.75),
               letterSpacing: 0.4,
             ),
           ),
@@ -489,7 +585,7 @@ class _StatTile extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     value,
-                    style: AppTextStyles.monoWeight(36, FontWeight.w800, color: ink),
+                    style: AppTextStyles.monoWeight(36, FontWeight.w800, color: accentColor),
                   ),
                 ),
               ),
@@ -499,7 +595,7 @@ class _StatTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: mute,
+                  color: accentColor.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -517,11 +613,14 @@ class _FilterChip extends StatelessWidget {
   final int count;
   final bool active;
   final VoidCallback onTap;
+  final bool compact;
+
   const _FilterChip({
     required this.label,
     required this.count,
     required this.active,
     required this.onTap,
+    this.compact = false,
   });
 
   @override
@@ -532,6 +631,10 @@ class _FilterChip extends StatelessWidget {
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
 
+    final hPad = compact ? 10.0 : 20.0;
+    final vPad = compact ? 6.0 : 10.0;
+    final fontSize = compact ? 13.0 : 17.0;
+
     return Material(
       color: active ? ink : card,
       borderRadius: BorderRadius.circular(24),
@@ -539,7 +642,7 @@ class _FilterChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
           decoration: BoxDecoration(
             border: Border.all(color: active ? ink : line),
             borderRadius: BorderRadius.circular(24),
@@ -547,7 +650,7 @@ class _FilterChip extends StatelessWidget {
           child: Text(
             '$label  $count',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: fontSize,
               fontWeight: FontWeight.w700,
               color: active ? (isDark ? AppColors.bgDark : Colors.white) : mute,
             ),
@@ -684,123 +787,4 @@ class _DateFilterButton extends StatelessWidget {
   }
 }
 
-class _SearchKeypad extends StatelessWidget {
-  final ValueChanged<String> onKeyTap;
-  final VoidCallback onClear;
-  final VoidCallback onBackspace;
 
-  const _SearchKeypad({
-    required this.onKeyTap,
-    required this.onClear,
-    required this.onBackspace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final keys = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['C', '0', '←'],
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : AppColors.card,
-        border: Border.all(color: isDark ? AppColors.lineDark : AppColors.line),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var row in keys) ...[
-            Row(
-              children: [
-                for (var key in row) ...[
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: _SearchKey(
-                        label: key,
-                        onTap: () {
-                          if (key == 'C') {
-                            onClear();
-                          } else if (key == '←') {
-                            onBackspace();
-                          } else {
-                            onKeyTap(key);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchKey extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _SearchKey({required this.label, required this.onTap});
-
-  @override
-  State<_SearchKey> createState() => _SearchKeyState();
-}
-
-class _SearchKeyState extends State<_SearchKey> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
-    final ink = isDark ? AppColors.inkOnDark : AppColors.ink;
-    final line = isDark ? AppColors.lineDark : AppColors.line;
-
-    Color bg;
-    Color fg;
-    if (_isPressed) {
-      bg = leaf;
-      fg = isDark ? const Color(0xFF0D1F0F) : Colors.white;
-    } else {
-      bg = isDark ? const Color(0xFF1E2221) : AppColors.bg;
-      fg = ink;
-    }
-
-    return Listener(
-      onPointerDown: (_) => setState(() => _isPressed = true),
-      onPointerUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onPointerCancel: (_) => setState(() => _isPressed = false),
-      child: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _isPressed ? leaf : line, width: 0.8),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          widget.label,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: fg,
-            fontFamily: widget.label == '←' ? null : 'monospace',
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -58,8 +58,8 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               child: Image.asset(
                 'assets/icon/logorecycle.png',
-                width: 180,
-                height: 180,
+                width: 260,
+                height: 260,
               ),
             ),
             const SizedBox(height: 36),

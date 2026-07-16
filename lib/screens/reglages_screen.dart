@@ -142,28 +142,68 @@ class ReglagesScreen extends StatelessWidget {
   }
 
   void _confirmReset(BuildContext context) {
+    final passwordCtrl = TextEditingController();
+    bool wrongPassword = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Effacer toutes les données ?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-        content: const Text(
-          'Cette action est irréversible : tous les Big Bags et chargements seront supprimés.',
-          style: TextStyle(fontSize: 18),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text(
+            'Réinitialiser les données',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Cette action est irréversible : tous les Big Bags et chargements seront supprimés.',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: true,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Mot de passe',
+                  errorText: wrongPassword ? 'Mot de passe incorrect' : null,
+                  prefixIcon: const Icon(Icons.lock_outline),
+                ),
+                onChanged: (_) {
+                  if (wrongPassword) setStateDialog(() => wrongPassword = false);
+                },
+                onSubmitted: (_) async {
+                  if (passwordCtrl.text == 'bamo123') {
+                    await context.read<AppProvider>().resetAllData();
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  } else {
+                    setStateDialog(() => wrongPassword = true);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Annuler', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (passwordCtrl.text == 'bamo123') {
+                  await context.read<AppProvider>().resetAllData();
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                } else {
+                  setStateDialog(() => wrongPassword = true);
+                }
+              },
+              style: FilledButton.styleFrom(backgroundColor: AppColors.clay),
+              child: const Text('Confirmer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Annuler', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await context.read<AppProvider>().resetAllData();
-              if (ctx.mounted) Navigator.of(ctx).pop();
-            },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.clay),
-            child: const Text('Confirmer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          ),
-        ],
       ),
     );
   }

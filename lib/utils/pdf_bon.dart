@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -20,10 +21,14 @@ class PdfBonGenerator {
     final tare = bigBags.length * BigBag.tareKg;
     final net = brut - tare;
 
+    final logoData = await rootBundle.load('assets/icon/logorecycle.png');
+    final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(36),
+        maxPages: 999,
         build: (context) => [
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -31,23 +36,7 @@ class PdfBonGenerator {
             children: [
               pw.Row(
                 children: [
-                  pw.Container(
-                    width: 40,
-                    height: 40,
-                    decoration: pw.BoxDecoration(
-                      color: PdfColor.fromInt(0xFF1A1D1C),
-                      shape: pw.BoxShape.circle,
-                    ),
-                    alignment: pw.Alignment.center,
-                    child: pw.Text(
-                      'DR',
-                      style: pw.TextStyle(
-                        color: PdfColors.white,
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+                  pw.Image(logoImage, width: 80, height: 80),
                   pw.SizedBox(width: 12),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -101,17 +90,26 @@ class PdfBonGenerator {
               color: PdfColor.fromInt(0xFFFAF8F2),
               borderRadius: pw.BorderRadius.circular(8),
             ),
-            child: pw.GridView(
-              crossAxisCount: 2,
-              childAspectRatio: 6,
+            child: pw.Column(
               children: [
-                _metaCell('CLIENT', chargement.client),
-                _metaCell(
-                  'DATE',
-                  dateFmt.format(chargement.closedAt ?? DateTime.now()),
+                pw.Row(
+                  children: [
+                    pw.Expanded(child: _metaCell('CLIENT', chargement.client)),
+                    pw.Expanded(
+                      child: _metaCell(
+                        'DATE',
+                        dateFmt.format(chargement.closedAt ?? DateTime.now()),
+                      ),
+                    ),
+                  ],
                 ),
-                _metaCell('CAMION', chargement.camion ?? '—'),
-                _metaCell('CHAUFFEUR', chargement.chauffeur ?? '—'),
+                pw.SizedBox(height: 8),
+                pw.Row(
+                  children: [
+                    pw.Expanded(child: _metaCell('CAMION', chargement.camion ?? '—')),
+                    pw.Expanded(child: _metaCell('CHAUFFEUR', chargement.chauffeur ?? '—')),
+                  ],
+                ),
               ],
             ),
           ),
