@@ -26,10 +26,6 @@ class NumericKeypad extends StatelessWidget {
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final card = isDark ? AppColors.cardDark : AppColors.card;
     final ink = isDark ? AppColors.inkOnDark : AppColors.ink;
-    final clayTint = isDark
-        ? AppColors.clayOnDark.withValues(alpha: 0.18)
-        : AppColors.clayTint;
-    final clay = isDark ? AppColors.clayOnDark : AppColors.clay;
     final sunTint = isDark
         ? AppColors.sunOnDark.withValues(alpha: 0.18)
         : AppColors.sunTint;
@@ -62,7 +58,7 @@ class NumericKeypad extends StatelessWidget {
         key('3', onTap: () => onDigit('3')),
       ],
       [
-        key('C', onTap: onClear, bg: clayTint, fg: clay),
+        key(',', onTap: () => onDigit(',')),
         key('0', onTap: () => onDigit('0')),
         key('←', onTap: onBackspace, bg: sunTint, fg: sun),
       ],
@@ -109,7 +105,7 @@ class NumericKeypad extends StatelessWidget {
         key('1', onTap: () => onDigit('1')),
         key('2', onTap: () => onDigit('2')),
         key('3', onTap: () => onDigit('3')),
-        key('C', onTap: onClear, bg: clayTint, fg: clay),
+        key(',', onTap: () => onDigit(',')),
         key('0', onTap: () => onDigit('0')),
         key('←', onTap: onBackspace, bg: sunTint, fg: sun),
       ],
@@ -117,7 +113,7 @@ class NumericKeypad extends StatelessWidget {
   }
 }
 
-class _KeypadKey extends StatelessWidget {
+class _KeypadKey extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
   final Color bg;
@@ -133,22 +129,53 @@ class _KeypadKey extends StatelessWidget {
   });
 
   @override
+  State<_KeypadKey> createState() => _KeypadKeyState();
+}
+
+class _KeypadKeyState extends State<_KeypadKey> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final greenColor = isDark ? AppColors.leafOnDark : AppColors.leaf;
+    final pressedFgColor = isDark ? const Color(0xFF0D1F0F) : Colors.white;
+
+    final displayBg = _isPressed ? greenColor : widget.bg;
+    final displayFg = _isPressed ? pressedFgColor : widget.fg;
+
     return Material(
-      color: bg,
+      color: displayBg,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: border),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: AppTextStyles.monoWeight(36, FontWeight.w800, color: fg),
+        onTap: widget.onTap,
+        child: Listener(
+          onPointerDown: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isPressed = true);
+            }
+          },
+          onPointerUp: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isPressed = false);
+            }
+          },
+          onPointerCancel: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isPressed = false);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: widget.border),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              widget.label,
+              style: AppTextStyles.monoWeight(36, FontWeight.w800, color: displayFg),
+            ),
           ),
         ),
       ),

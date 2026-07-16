@@ -122,7 +122,6 @@ class PdfBonGenerator {
               0: pw.FixedColumnWidth(36),
               1: pw.FlexColumnWidth(3),
               2: pw.FlexColumnWidth(2),
-              3: pw.FlexColumnWidth(2),
             },
             children: [
               pw.TableRow(
@@ -132,7 +131,6 @@ class PdfBonGenerator {
                 children: [
                   _th('#'),
                   _th('ID BIG BAG'),
-                  _th('QUALITÉ'),
                   _th('POIDS BRUT', alignRight: true),
                 ],
               ),
@@ -151,7 +149,6 @@ class PdfBonGenerator {
                   children: [
                     _td('${i + 1}'),
                     _td(bb.code, bold: true),
-                    _td(bb.qualite.label),
                     _td('${fmt.format(bb.poidsBrut)} kg', alignRight: true),
                   ],
                 );

@@ -51,21 +51,23 @@ class _HomeScreenState extends State<HomeScreen> {
     // ── Tablets & Wide Screens (width >= 700): permanent sidebar ───────
     if (isWide) {
       return Scaffold(
-        body: Row(
-          children: [
-            _SideNav(
-              index: _index,
-              destinations: _destinations,
-              stockCount: app.stockCount,
-              collapsed: _sideNavCollapsed,
-              onToggle: () => setState(() => _sideNavCollapsed = !_sideNavCollapsed),
-              onTap: (i) => setState(() => _index = i),
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(
-              child: IndexedStack(index: _index, children: _screens),
-            ),
-          ],
+        body: SafeArea(
+          child: Row(
+            children: [
+              _SideNav(
+                index: _index,
+                destinations: _destinations,
+                stockCount: app.stockCount,
+                collapsed: _sideNavCollapsed,
+                onToggle: () => setState(() => _sideNavCollapsed = !_sideNavCollapsed),
+                onTap: (i) => setState(() => _index = i),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: IndexedStack(index: _index, children: _screens),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -113,22 +115,10 @@ class _SideNav extends StatelessWidget {
     final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
 
     return Container(
-      width: collapsed ? 80 : 280,
+      width: collapsed ? 60 : 180,
       color: bg,
       child: Column(
         children: [
-          // Header with toggle button
-          Container(
-            height: 70,
-            alignment: collapsed ? Alignment.center : Alignment.centerLeft,
-            padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 20),
-            child: IconButton(
-              icon: const Icon(Icons.menu, size: 28),
-              color: unselectedColor,
-              onPressed: onToggle,
-            ),
-          ),
-          const Divider(height: 1),
           for (var i = 0; i < destinations.length; i++)
             Expanded(
               child: _SideNavItem(
@@ -191,7 +181,7 @@ class _SideNavItem extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 20),
+          padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 16),
           decoration: selected
               ? BoxDecoration(
                   border: Border(
@@ -235,12 +225,12 @@ class _SideNavItem extends StatelessWidget {
                 ],
               ),
               if (!collapsed) ...[
-                const SizedBox(width: 18),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 17,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: color,
                     ),

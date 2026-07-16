@@ -234,7 +234,6 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                             children: [
                               _Th('#'),
                               _Th('ID BIG BAG'),
-                              _Th('QUALITÉ'),
                               _Th('POIDS BRUT', alignRight: true),
                             ],
                           ),
@@ -251,7 +250,6 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                               children: [
                                 _Td('${e.key + 1}'),
                                 _Td(e.value.code, bold: true),
-                                _Td(e.value.qualite.label),
                                 _Td(
                                   '${fmt.format(e.value.poidsBrut)} kg',
                                   alignRight: true,

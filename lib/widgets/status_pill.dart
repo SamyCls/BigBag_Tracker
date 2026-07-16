@@ -26,9 +26,11 @@ class StatusPill extends StatelessWidget {
         isDark ? AppColors.sunOnDark : AppColors.sun,
       ),
       BigBagStatus.expedie => (
-        isDark ? AppColors.cardAltDark : AppColors.cardAlt,
-        isDark ? AppColors.inkMuteDark : AppColors.inkMute,
-        isDark ? AppColors.inkDimDark : AppColors.inkDim,
+        isDark
+            ? AppColors.clayOnDark.withValues(alpha: 0.16)
+            : AppColors.clayTint,
+        isDark ? AppColors.clayOnDark : AppColors.clay,
+        isDark ? AppColors.clayOnDark : AppColors.clay,
       ),
     };
 

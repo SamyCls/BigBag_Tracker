@@ -102,7 +102,8 @@ class _ListView extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 980;
 
-    final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
 
     final active = app.activeChargements;
 
@@ -129,8 +130,12 @@ class _ListView extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Créez ou reprenez une session · pas de perte de données',
-                          style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
+                          'Créez ou reprenez une session ',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: mute,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -140,9 +145,18 @@ class _ListView extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: onNew,
                       icon: const Icon(Icons.add, size: 30),
-                      label: const Text('NOUVEAU CHARGEMENT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                      label: const Text(
+                        'NOUVEAU CHARGEMENT',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -163,14 +177,24 @@ class _ListView extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     'Créez ou reprenez une session · pas de perte de données',
-                    style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: mute,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   if (active.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: onNew,
                       icon: const Icon(Icons.add, size: 30),
-                      label: const Text('NOUVEAU CHARGEMENT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                      label: const Text(
+                        'NOUVEAU CHARGEMENT',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 22),
                       ),
@@ -187,10 +211,16 @@ class _ListView extends StatelessWidget {
                         icon: const Icon(Icons.add, size: 48),
                         label: const Text(
                           'NOUVEAU CHARGEMENT',
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 48,
+                            vertical: 36,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -319,17 +349,25 @@ class _SessionCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if ((chargement.camion != null && chargement.camion!.trim().isNotEmpty) ||
-                      (chargement.chauffeur != null && chargement.chauffeur!.trim().isNotEmpty)) ...[
+                  if ((chargement.camion != null &&
+                          chargement.camion!.trim().isNotEmpty) ||
+                      (chargement.chauffeur != null &&
+                          chargement.chauffeur!.trim().isNotEmpty)) ...[
                     const SizedBox(height: 6),
                     Text(
                       [
-                        if (chargement.camion != null && chargement.camion!.trim().isNotEmpty)
+                        if (chargement.camion != null &&
+                            chargement.camion!.trim().isNotEmpty)
                           chargement.camion!.trim(),
-                        if (chargement.chauffeur != null && chargement.chauffeur!.trim().isNotEmpty)
+                        if (chargement.chauffeur != null &&
+                            chargement.chauffeur!.trim().isNotEmpty)
                           chargement.chauffeur!.trim(),
                       ].join(' · '),
-                      style: TextStyle(fontSize: 18, color: mute, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: mute,
+                        fontWeight: FontWeight.w500,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -498,7 +536,11 @@ class _SetupViewState extends State<_SetupView> {
                       const SizedBox(height: 6),
                       Text(
                         'Renseignez le client (le reste est optionnel)',
-                        style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: mute,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -534,11 +576,17 @@ class _SetupViewState extends State<_SetupView> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _clientCtrl,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
                       decoration: const InputDecoration(
                         hintText: 'Nom du client',
                         hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 18,
+                          horizontal: 14,
+                        ),
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
@@ -547,17 +595,30 @@ class _SetupViewState extends State<_SetupView> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: pastClients.map((c) => ActionChip(
-                          avatar: Icon(Icons.history, size: 20, color: leaf),
-                          label: Text(
-                            c,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: leaf),
-                          ),
-                          onPressed: () => setState(() {
-                            _clientCtrl.text = c;
-                            _clientCtrl.selection = TextSelection.collapsed(offset: c.length);
-                          }),
-                        )).toList(),
+                        children: pastClients
+                            .map(
+                              (c) => ActionChip(
+                                avatar: Icon(
+                                  Icons.history,
+                                  size: 20,
+                                  color: leaf,
+                                ),
+                                label: Text(
+                                  c,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: leaf,
+                                  ),
+                                ),
+                                onPressed: () => setState(() {
+                                  _clientCtrl.text = c;
+                                  _clientCtrl.selection =
+                                      TextSelection.collapsed(offset: c.length);
+                                }),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ],
                     const SizedBox(height: 18),
@@ -572,11 +633,17 @@ class _SetupViewState extends State<_SetupView> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _camionCtrl,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
                       decoration: const InputDecoration(
                         hintText: 'Immatriculation',
                         hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 18,
+                          horizontal: 14,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -591,11 +658,17 @@ class _SetupViewState extends State<_SetupView> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _chauffeurCtrl,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
                       decoration: const InputDecoration(
                         hintText: 'Nom du chauffeur',
                         hintStyle: TextStyle(fontSize: 22),
-                        contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 18,
+                          horizontal: 14,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -617,7 +690,10 @@ class _SetupViewState extends State<_SetupView> {
                         icon: const Icon(Icons.play_arrow, size: 28),
                         label: const Text(
                           'DÉMARRER',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
@@ -664,7 +740,8 @@ class _SessionViewState extends State<_SessionView> {
     switch (result) {
       case AddBBResult.ok:
         showAppToast(context, '${app.normalizeCode(rawCode)} ajouté');
-        if (code == null || app.normalizeCode(_input) == app.normalizeCode(code)) {
+        if (code == null ||
+            app.normalizeCode(_input) == app.normalizeCode(code)) {
           setState(() => _input = '');
         }
         break;
@@ -787,7 +864,10 @@ class _SessionViewState extends State<_SessionView> {
               child: ElevatedButton.icon(
                 onPressed: _input.isEmpty ? null : () => _tryAdd(app),
                 icon: const Icon(Icons.add, size: 28),
-                label: const Text('AJOUTER', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                label: const Text(
+                  'AJOUTER',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
               ),
             ),
           ],
@@ -811,10 +891,7 @@ class _SessionViewState extends State<_SessionView> {
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               physics: expandList ? null : const NeverScrollableScrollPhysics(),
               shrinkWrap: !expandList,
               itemCount: bbs.length,
@@ -866,15 +943,16 @@ class _SessionViewState extends State<_SessionView> {
                         icon: const Icon(Icons.delete_outline, size: 22),
                         label: const Text(
                           'Retirer',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: isDark
                               ? AppColors.clayOnDark
                               : AppColors.clay,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                         ),
                       ),
                     ],
@@ -915,7 +993,11 @@ class _SessionViewState extends State<_SessionView> {
                   ? Center(
                       child: Text(
                         'Tous les sacs ont été ajoutés',
-                        style: TextStyle(color: mute, fontSize: 16, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          color: mute,
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     )
                   : ListView.separated(
@@ -925,7 +1007,9 @@ class _SessionViewState extends State<_SessionView> {
                       separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (context, i) {
                         final b = stockSuggestions[i];
-                        final isSelected = _input.isNotEmpty && app.normalizeCode(_input) == b.code;
+                        final isSelected =
+                            _input.isNotEmpty &&
+                            app.normalizeCode(_input) == b.code;
                         return _StockSuggestionCard(
                           bb: b,
                           selected: isSelected,
@@ -939,7 +1023,12 @@ class _SessionViewState extends State<_SessionView> {
                       },
                     ),
             ),
-            Divider(height: 1, color: card == AppColors.cardDark ? AppColors.lineDark : AppColors.line),
+            Divider(
+              height: 1,
+              color: card == AppColors.cardDark
+                  ? AppColors.lineDark
+                  : AppColors.line,
+            ),
             // header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -957,17 +1046,16 @@ class _SessionViewState extends State<_SessionView> {
                   ),
                   Text(
                     'Plus récent en haut',
-                    style: TextStyle(fontSize: 16, color: mute, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: mute,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (expandList)
-              Expanded(
-                child: listContent,
-              )
-            else
-              listContent,
+            if (expandList) Expanded(child: listContent) else listContent,
           ],
         ),
       );
@@ -1004,7 +1092,11 @@ class _SessionViewState extends State<_SessionView> {
                       ),
                       Text(
                         '${ch.bonNumero ?? ""} ${ch.camion != null ? "· ${ch.camion}" : ""} ${ch.chauffeur != null ? "· ${ch.chauffeur}" : ""}',
-                        style: TextStyle(fontSize: 18, color: mute, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: mute,
+                          fontWeight: FontWeight.w500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -1019,13 +1111,24 @@ class _SessionViewState extends State<_SessionView> {
                     }
                     widget.onBack();
                   },
-                  icon: Icon(ch.status == ChargementStatus.pause ? Icons.play_arrow : Icons.pause, size: 24),
+                  icon: Icon(
+                    ch.status == ChargementStatus.pause
+                        ? Icons.play_arrow
+                        : Icons.pause,
+                    size: 24,
+                  ),
                   label: Text(
                     ch.status == ChargementStatus.pause ? 'REPRENDRE' : 'PAUSE',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1045,7 +1148,10 @@ class _SessionViewState extends State<_SessionView> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1083,9 +1189,15 @@ class _SessionViewState extends State<_SessionView> {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(flex: 4, child: buildAddPanel(expandKeypad: true)),
+                        Expanded(
+                          flex: 4,
+                          child: buildAddPanel(expandKeypad: true),
+                        ),
                         const SizedBox(width: 16),
-                        Expanded(flex: 5, child: buildListPanel(expandList: true)),
+                        Expanded(
+                          flex: 5,
+                          child: buildListPanel(expandList: true),
+                        ),
                       ],
                     )
                   : SingleChildScrollView(

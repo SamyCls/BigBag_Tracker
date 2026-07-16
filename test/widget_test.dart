@@ -9,7 +9,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const BigBagManagerApp());
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 3500));
 
     expect(find.text('Production'), findsWidgets);
   });
