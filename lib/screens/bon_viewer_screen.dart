@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../models/chargement.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
-import '../utils/pdf_bon.dart';
 import '../utils/share_bon.dart';
 
 /// Affiche le bon d'expédition généré automatiquement à la fin d'un
@@ -48,6 +48,7 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    context.watch<LanguageProvider>();
 
     if (_loading || _chargement == null) {
       return const Dialog(
@@ -59,8 +60,8 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
     }
 
     final ch = _chargement!;
-    final fmt = NumberFormat('#,##0', 'fr_FR');
-    final dtFmt = DateFormat('dd MMM yyyy à HH:mm', 'fr_FR');
+    final fmt = NumberFormat('#,##0.##', 'fr_FR');
+    final dtFmt = DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR');
     final brut = _bigBags.fold(0.0, (s, b) => s + b.poidsBrut);
     final tare = _bigBags.length * BigBag.tareKg;
     final net = brut - tare;
@@ -90,14 +91,14 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                       color: Colors.white,
                       size: 16,
                     ),
-                    label: const Text(
-                      'Fermer',
-                      style: TextStyle(color: Colors.white),
+                    label: Text(
+                      context.tr('close'),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                   Expanded(
                     child: Text(
-                      "Bon d'expédition · ${ch.bonNumero ?? ''}",
+                      "${context.tr('bon_title')} · ${ch.bonNumero ?? ''}",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -111,7 +112,7 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                       bigBags: _bigBags,
                     ),
                     icon: const Icon(Icons.share, size: 16),
-                    label: const Text('PARTAGER'),
+                    label: Text(context.tr('bon_share')),
                   ),
                 ],
               ),
@@ -161,7 +162,7 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               const Text(
-                                "Bon d'expédition",
+                                'Bon d\'expédition',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontStyle: FontStyle.italic,
@@ -206,8 +207,8 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                       Table(
                         columnWidths: const {0: FixedColumnWidth(40)},
                         children: [
-                          const TableRow(
-                            decoration: BoxDecoration(
+                          TableRow(
+                            decoration: const BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
                                   width: 2,
@@ -216,9 +217,9 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                               ),
                             ),
                             children: [
-                              _Th('#'),
-                              _Th('ID BIG BAG'),
-                              _Th('POIDS BRUT', alignRight: true),
+                              const _Th('#'),
+                              const _Th('ID BIG BAG'),
+                              const _Th('POIDS BRUT', alignRight: true),
                             ],
                           ),
                           ..._bigBags.asMap().entries.map(
@@ -279,15 +280,15 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                       ),
                       const SizedBox(height: 36),
                       Row(
-                        children: const [
+                        children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Divider(color: AppColors.ink),
+                                const Divider(color: AppColors.ink),
                                 Text(
                                   'Signature Delta Recycl',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.inkMute,
                                   ),
@@ -295,13 +296,13 @@ class _BonViewerScreenState extends State<BonViewerScreen> {
                               ],
                             ),
                           ),
-                          SizedBox(width: 30),
+                          const SizedBox(width: 30),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Divider(color: AppColors.ink),
-                                Text(
+                                const Divider(color: AppColors.ink),
+                                const Text(
                                   'Signature transporteur',
                                   style: TextStyle(
                                     fontSize: 11,

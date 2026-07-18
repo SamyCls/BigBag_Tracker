@@ -1,8 +1,9 @@
-﻿import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bb_code_keypad.dart';
 import 'bon_viewer_screen.dart';
@@ -77,12 +78,14 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      locale: const Locale('fr', 'FR'),
+      locale: Locale(context.read<LanguageProvider>().languageCode),
     );
-    if (picked != null) setState(() {
-      _selectedDate = picked;
-      _quickFilter = null;
-    });
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _quickFilter = null;
+      });
+    }
   }
 
   @override
@@ -94,7 +97,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
     final card = isDark ? AppColors.cardDark : AppColors.card;
-    final fmt = NumberFormat('#,##0', 'fr_FR');
+    final fmt = NumberFormat('#,##0.##', 'fr_FR');
     final dateFmt = DateFormat('dd MMM yyyy', 'fr_FR');
     // ── Filter ─────────────────────────────────────────────────────────
     final now = DateTime.now();
@@ -105,7 +108,9 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
         if (d == null ||
             d.year != _selectedDate!.year ||
             d.month != _selectedDate!.month ||
-            d.day != _selectedDate!.day) return false;
+            d.day != _selectedDate!.day) {
+          return false;
+        }
       }
       if (_quickFilter == 'month') {
         final d = c.closedAt;
@@ -143,7 +148,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
           children: [
             // ── Header ──────────────────────────────────────────────────
             Text(
-              'Historique des expéditions',
+              context.tr('hist_title'),
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w800,
@@ -152,7 +157,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '${all.length} / ${app.terminatedChargements.length} bon(s)',
+              '${all.length} / ${app.terminatedChargements.length} ${context.tr('hist_subtitle')}',
               style: TextStyle(
                 fontSize: 16,
                 color: mute,
@@ -239,7 +244,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
 
                           ] else
                             Text(
-                              'Chercher bon (ex: 42)',
+                              context.tr('hist_search'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -293,7 +298,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                         if (_selectedDate != null) ...[
                           const SizedBox(width: 6),
                           Text(
-                            DateFormat('dd MMM yyyy', 'fr_FR')
+                            DateFormat('dd MMM yyyy', context.watch<LanguageProvider>().languageCode)
                                 .format(_selectedDate!),
                             style: TextStyle(
                               fontSize: 14,
@@ -314,7 +319,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
             Row(
               children: [
                 _QuickChip(
-                  label: 'Tout',
+                  label: context.tr('hist_all'),
                   active: _quickFilter == null && _selectedDate == null,
                   activeColor: leaf,
                   onTap: () => setState(() {
@@ -328,7 +333,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 ),
                 const SizedBox(width: 8),
                 _QuickChip(
-                  label: 'Cette semaine',
+                  label: context.tr('hist_this_week'),
                   active: _quickFilter == 'week',
                   activeColor: leaf,
                   onTap: () => setState(() {
@@ -342,7 +347,7 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                 ),
                 const SizedBox(width: 8),
                 _QuickChip(
-                  label: 'Ce mois',
+                  label: context.tr('hist_this_month'),
                   active: _quickFilter == 'month',
                   activeColor: leaf,
                   onTap: () => setState(() {
@@ -374,8 +379,8 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
                   ? Center(
                       child: Text(
                         hasDigitFilter || _selectedDate != null || _quickFilter != null
-                            ? 'Aucun résultat'
-                            : 'Aucun chargement terminé',
+                            ? context.tr('hist_no_results')
+                            : context.tr('hist_empty'),
                         style: TextStyle(color: mute, fontSize: 18),
                       ),
                     )
@@ -459,13 +464,13 @@ class _HistRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: isWide
-          ? _wideRow(ink, mute, leafTint, leafDark)
-          : _narrowCol(ink, mute, leafTint, leafDark),
+          ? _wideRow(context, ink, mute, leafTint, leafDark)
+          : _narrowCol(context, ink, mute, leafTint, leafDark),
     );
   }
 
   Widget _wideRow(
-      Color ink, Color mute, Color leafTint, Color leafDark) {
+      BuildContext context, Color ink, Color mute, Color leafTint, Color leafDark) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -516,9 +521,9 @@ class _HistRow extends StatelessWidget {
           ),
         ),
         // Stats
-        _mini('$nbBB BB', ink, mute),
+        _mini('$nbBB ${context.tr('stock_total_bb') == 'Big Bags' ? 'BB' : 'كيس'}', ink, mute),
         const SizedBox(width: 16),
-        _mini('$brut kg brut', ink, mute),
+        _mini('$brut ${context.tr('kg')} ${context.tr('ch_brut').toLowerCase()}', ink, mute),
         const SizedBox(width: 12),
         Container(
           padding:
@@ -528,7 +533,7 @@ class _HistRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            '$net kg net',
+            '$net ${context.tr('kg')} ${context.tr('bon_net').toLowerCase()}',
             style: AppTextStyles.monoWeight(
                 15, FontWeight.w800, color: leafDark),
           ),
@@ -537,9 +542,9 @@ class _HistRow extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onOpen,
           icon: const Icon(Icons.print, size: 16),
-          label: const Text('Rouvrir',
+          label: Text(context.watch<LanguageProvider>().languageCode == 'ar' ? 'فتح' : 'Rouvrir',
               style:
-                  TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
           style: OutlinedButton.styleFrom(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -552,7 +557,7 @@ class _HistRow extends StatelessWidget {
   }
 
   Widget _narrowCol(
-      Color ink, Color mute, Color leafTint, Color leafDark) {
+      BuildContext context, Color ink, Color mute, Color leafTint, Color leafDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -576,8 +581,8 @@ class _HistRow extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onOpen,
               icon: const Icon(Icons.print, size: 16),
-              label: const Text('Rouvrir',
-                  style: TextStyle(
+              label: Text(context.watch<LanguageProvider>().languageCode == 'ar' ? 'فتح' : 'Rouvrir',
+                  style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w700)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -611,9 +616,9 @@ class _HistRow extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            _mini('$nbBB BB', ink, mute),
+            _mini('$nbBB ${context.tr('stock_total_bb') == 'Big Bags' ? 'BB' : 'كيس'}', ink, mute),
             const SizedBox(width: 14),
-            _mini('$brut kg brut', ink, mute),
+            _mini('$brut ${context.tr('kg')} ${context.tr('ch_brut').toLowerCase()}', ink, mute),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(
@@ -623,7 +628,7 @@ class _HistRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '$net kg net',
+                '$net ${context.tr('kg')} ${context.tr('bon_net').toLowerCase()}',
                 style: AppTextStyles.monoWeight(
                     14, FontWeight.w800, color: leafDark),
               ),

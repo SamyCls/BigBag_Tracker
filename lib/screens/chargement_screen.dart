@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/chargement.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/toast.dart';
 import '../widgets/bb_code_keypad.dart';
@@ -122,7 +123,7 @@ class _ListView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Chargement camion',
+                          context.tr('ch_title'),
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.w800,
@@ -131,7 +132,9 @@ class _ListView extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Créez ou reprenez une session ',
+                          context.watch<LanguageProvider>().languageCode == 'ar'
+                              ? 'أنشئ أو استأنف شحنة · لا يوجد فقدان للبيانات'
+                              : 'Créez ou reprenez une session ',
                           style: TextStyle(
                             fontSize: 20,
                             color: mute,
@@ -146,9 +149,9 @@ class _ListView extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: onNew,
                       icon: const Icon(Icons.add, size: 30),
-                      label: const Text(
-                        'NOUVEAU CHARGEMENT',
-                        style: TextStyle(
+                      label: Text(
+                        context.tr('ch_new'),
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
@@ -168,7 +171,7 @@ class _ListView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Chargement camion',
+                    context.tr('ch_title'),
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w800,
@@ -177,7 +180,9 @@ class _ListView extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Créez ou reprenez une session · pas de perte de données',
+                    context.watch<LanguageProvider>().languageCode == 'ar'
+                        ? 'أنشئ أو استأنف شحنة · لا يوجد فقدان للبيانات'
+                        : 'Créez ou reprenez une session · pas de perte de données',
                     style: TextStyle(
                       fontSize: 20,
                       color: mute,
@@ -189,9 +194,9 @@ class _ListView extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: onNew,
                       icon: const Icon(Icons.add, size: 30),
-                      label: const Text(
-                        'NOUVEAU CHARGEMENT',
-                        style: TextStyle(
+                      label: Text(
+                        context.tr('ch_new'),
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                         ),
@@ -210,9 +215,9 @@ class _ListView extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onNew,
                         icon: const Icon(Icons.add, size: 48),
-                        label: const Text(
-                          'NOUVEAU CHARGEMENT',
-                          style: TextStyle(
+                        label: Text(
+                          context.tr('ch_new'),
+                          style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
                           ),
@@ -340,7 +345,7 @@ class _SessionCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          paused ? 'EN PAUSE' : 'ACTIF',
+                          paused ? context.tr('ch_paused').toUpperCase() : (context.watch<LanguageProvider>().languageCode == 'ar' ? 'نشط' : 'ACTIF'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -377,7 +382,7 @@ class _SessionCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _MiniStat(
-                          label: 'BIG BAGS',
+                          label: context.tr('stock_total_bb'),
                           value: '$bbCount',
                           color: leaf,
                           mute: mute,
@@ -385,8 +390,8 @@ class _SessionCard extends StatelessWidget {
                       ),
                       Expanded(
                         child: _MiniStat(
-                          label: 'POIDS BRUT',
-                          value: '${fmt.format(brut)} kg',
+                          label: context.tr('ch_brut'),
+                          value: '${fmt.format(brut)} ${context.tr('kg')}',
                           color: ink,
                           mute: mute,
                         ),
@@ -412,7 +417,7 @@ class _SessionCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          paused ? 'REPRENDRE' : 'CONTINUER',
+                          paused ? context.tr('ch_reprendre').toUpperCase() : (context.watch<LanguageProvider>().languageCode == 'ar' ? 'متابعة' : 'CONTINUER'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -624,7 +629,7 @@ class _SetupViewState extends State<_SetupView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'CLIENT *',
+                        '${context.tr('ch_client')} *',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -640,10 +645,10 @@ class _SetupViewState extends State<_SetupView> {
                           fontSize: 22,
                           fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
-                          hintText: 'Nom du client',
-                          hintStyle: TextStyle(fontSize: 22),
-                          contentPadding: EdgeInsets.symmetric(
+                        decoration: InputDecoration(
+                          hintText: context.tr('ch_client_ph'),
+                          hintStyle: const TextStyle(fontSize: 22),
+                          contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
                             horizontal: 14,
                           ),
@@ -686,7 +691,7 @@ class _SetupViewState extends State<_SetupView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'CAMION (OPTIONNEL)',
+                        context.tr('ch_camion').toUpperCase(),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -702,10 +707,10 @@ class _SetupViewState extends State<_SetupView> {
                           fontSize: 22,
                           fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
-                          hintText: 'Immatriculation',
-                          hintStyle: TextStyle(fontSize: 22),
-                          contentPadding: EdgeInsets.symmetric(
+                        decoration: InputDecoration(
+                          hintText: context.tr('ch_camion_ph'),
+                          hintStyle: const TextStyle(fontSize: 22),
+                          contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
                             horizontal: 14,
                           ),
@@ -716,7 +721,7 @@ class _SetupViewState extends State<_SetupView> {
                         buildSuggestionsList(matchingCamions, _camionCtrl, _camionFocus),
                       const SizedBox(height: 12),
                       Text(
-                        'CHAUFFEUR (OPTIONNEL)',
+                        context.tr('ch_chauffeur').toUpperCase(),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -733,10 +738,10 @@ class _SetupViewState extends State<_SetupView> {
                           fontSize: 22,
                           fontWeight: FontWeight.w600,
                         ),
-                        decoration: const InputDecoration(
-                          hintText: 'Nom du chauffeur',
-                          hintStyle: TextStyle(fontSize: 22),
-                          contentPadding: EdgeInsets.symmetric(
+                        decoration: InputDecoration(
+                          hintText: context.tr('ch_chauffeur_ph'),
+                          hintStyle: const TextStyle(fontSize: 22),
+                          contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
                             horizontal: 14,
                           ),
@@ -752,7 +757,7 @@ class _SetupViewState extends State<_SetupView> {
             ),
           ] else ...[
             Text(
-              'CLIENT *',
+              '${context.tr('ch_client')} *',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -768,10 +773,10 @@ class _SetupViewState extends State<_SetupView> {
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: const InputDecoration(
-                hintText: 'Nom du client',
-                hintStyle: TextStyle(fontSize: 22),
-                contentPadding: EdgeInsets.symmetric(
+              decoration: InputDecoration(
+                hintText: context.tr('ch_client_ph'),
+                hintStyle: const TextStyle(fontSize: 22),
+                contentPadding: const EdgeInsets.symmetric(
                   vertical: 18,
                   horizontal: 14,
                 ),
@@ -806,7 +811,7 @@ class _SetupViewState extends State<_SetupView> {
             ],
             const SizedBox(height: 18),
             Text(
-              'CAMION (OPTIONNEL)',
+              context.tr('ch_camion').toUpperCase(),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -822,10 +827,10 @@ class _SetupViewState extends State<_SetupView> {
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: const InputDecoration(
-                hintText: 'Immatriculation',
-                hintStyle: TextStyle(fontSize: 22),
-                contentPadding: EdgeInsets.symmetric(
+              decoration: InputDecoration(
+                hintText: context.tr('ch_camion_ph'),
+                hintStyle: const TextStyle(fontSize: 22),
+                contentPadding: const EdgeInsets.symmetric(
                   vertical: 18,
                   horizontal: 14,
                 ),
@@ -836,7 +841,7 @@ class _SetupViewState extends State<_SetupView> {
               buildSuggestionsList(matchingCamions, _camionCtrl, _camionFocus),
             const SizedBox(height: 18),
             Text(
-              'CHAUFFEUR (OPTIONNEL)',
+              context.tr('ch_chauffeur').toUpperCase(),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -853,10 +858,10 @@ class _SetupViewState extends State<_SetupView> {
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
-              decoration: const InputDecoration(
-                hintText: 'Nom du chauffeur',
-                hintStyle: TextStyle(fontSize: 22),
-                contentPadding: EdgeInsets.symmetric(
+              decoration: InputDecoration(
+                hintText: context.tr('ch_chauffeur_ph'),
+                hintStyle: const TextStyle(fontSize: 22),
+                contentPadding: const EdgeInsets.symmetric(
                   vertical: 18,
                   horizontal: 14,
                 ),
@@ -883,9 +888,9 @@ class _SetupViewState extends State<_SetupView> {
                           : _chauffeurCtrl.text.trim(),
                     ),
               icon: const Icon(Icons.play_arrow, size: 28),
-              label: const Text(
-                'DÉMARRER',
-                style: TextStyle(
+              label: Text(
+                context.tr('ch_start'),
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
@@ -909,7 +914,7 @@ class _SetupViewState extends State<_SetupView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Nouveau chargement',
+                        context.tr('ch_setup'),
                         style: TextStyle(
                           fontSize: 38,
                           fontWeight: FontWeight.w800,
@@ -918,7 +923,7 @@ class _SetupViewState extends State<_SetupView> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Renseignez le client (le reste est optionnel)',
+                        context.tr('ch_subtitle'),
                         style: TextStyle(
                           fontSize: 20,
                           color: mute,
@@ -931,7 +936,7 @@ class _SetupViewState extends State<_SetupView> {
                 OutlinedButton.icon(
                   onPressed: widget.onCancel,
                   icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Annuler'),
+                  label: Text(context.tr('cancel')),
                 ),
               ],
             ),
@@ -1041,23 +1046,23 @@ class _SessionViewState extends State<_SessionView> {
     if (!mounted) return;
     switch (result) {
       case AddBBResult.ok:
-        showAppToast(context, '${app.normalizeCode(rawCode)} ajouté');
+        showAppToast(context, '${app.normalizeCode(rawCode)} ${context.tr('ch_ajoute')}');
         setState(() {
           _digits = '000000';
         });
         break;
       case AddBBResult.notFound:
-        showAppToast(context, 'Big Bag introuvable', isError: true);
+        showAppToast(context, context.tr('ch_introuvable'), isError: true);
         break;
       case AddBBResult.alreadyCharge:
         showAppToast(
           context,
-          'Déjà chargé dans un autre camion',
+          context.tr('ch_deja_charge'),
           isError: true,
         );
         break;
       case AddBBResult.alreadyExpedie:
-        showAppToast(context, 'Ce Big Bag est déjà expédié', isError: true);
+        showAppToast(context, context.tr('ch_deja_expedie'), isError: true);
         break;
     }
   }
@@ -1078,6 +1083,15 @@ class _SessionViewState extends State<_SessionView> {
     final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
     final card = isDark ? AppColors.cardDark : AppColors.card;
     final line = isDark ? AppColors.lineDark : AppColors.line;
+
+    // Memorable high-contrast colors for outdoor usage (sun exposure)
+    final box1Bg = isDark ? const Color(0xFF065F46) : const Color(0xFF059669); // Emerald Green
+    final box2Bg = isDark ? const Color(0xFF9A3412) : const Color(0xFFEA580C); // Orange
+    final box3Bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFF2563EB); // Royal Blue
+    final box4Bg = isDark ? const Color(0xFF881337) : const Color(0xFFBE123C); // Clay/Rose/Red
+
+    final boxTextColor = Colors.white.withValues(alpha: 0.76);
+    final boxValueColor = Colors.white;
 
     final stockSuggestions = app
         .filterBigBags(status: BigBagStatus.stock)
@@ -1101,8 +1115,8 @@ class _SessionViewState extends State<_SessionView> {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Text(
                 stockSuggestions.isEmpty
-                    ? 'AUCUN SAC EN STOCK'
-                    : 'EN STOCK — appuyez pour ajouter',
+                    ? context.tr('ch_empty_stock')
+                    : '${context.tr('st_stock')} — ${context.tr('prod_suggestions')}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -1116,7 +1130,7 @@ class _SessionViewState extends State<_SessionView> {
               child: stockSuggestions.isEmpty
                   ? Center(
                       child: Text(
-                        'Tous les sacs ont été ajoutés',
+                        context.tr('ch_all_added'),
                         style: TextStyle(
                           color: mute,
                           fontSize: 16,
@@ -1213,7 +1227,7 @@ class _SessionViewState extends State<_SessionView> {
                                           }),
                                         ] else ...[
                                           Text(
-                                            'Saisir numéro du sac (ex: 42)',
+                                            context.tr('ch_scan_ph'),
                                             style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.w500,
@@ -1234,9 +1248,9 @@ class _SessionViewState extends State<_SessionView> {
                                       ? null
                                       : () => _tryAdd(app),
                                   icon: const Icon(Icons.add, size: 22),
-                                  label: const Text(
-                                    'AJOUTER',
-                                    style: TextStyle(
+                                  label: Text(
+                                    context.tr('ch_add').toUpperCase(),
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -1275,7 +1289,7 @@ class _SessionViewState extends State<_SessionView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'BIG BAGS CHARGÉS',
+                            context.tr('ch_liste').toUpperCase(),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -1284,7 +1298,7 @@ class _SessionViewState extends State<_SessionView> {
                             ),
                           ),
                           Text(
-                            'Plus récent en haut',
+                            context.tr('ch_recent_top'),
                             style: TextStyle(
                               fontSize: 16,
                               color: mute,
@@ -1304,7 +1318,7 @@ class _SessionViewState extends State<_SessionView> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 40),
                           child: Text(
-                            'Ajoutez votre premier Big Bag',
+                            context.tr('ch_empty_session'),
                             style: TextStyle(
                               fontSize: 22,
                               fontStyle: FontStyle.italic,
@@ -1350,7 +1364,7 @@ class _SessionViewState extends State<_SessionView> {
                                   ),
                                 ),
                                 Text(
-                                  '${fmt.format(bb.poidsBrut)} kg',
+                                  '${fmt.format(bb.poidsBrut)} ${context.tr('kg')}',
                                   style: AppTextStyles.monoWeight(
                                     20,
                                     FontWeight.w600,
@@ -1437,37 +1451,38 @@ class _SessionViewState extends State<_SessionView> {
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
+                    final appProvider = context.read<AppProvider>();
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Annuler le chargement ?'),
-                        content: const Text(
-                          'Tous les Big Bags seront remis en stock et ce chargement sera supprimé définitivement.',
+                        title: Text(context.tr('ch_cancel_confirm_title')),
+                        content: Text(
+                          context.tr('ch_cancel_confirm_body'),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Non'),
+                            child: Text(context.tr('no')),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(ctx, true),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.red,
                             ),
-                            child: const Text('Oui, annuler'),
+                            child: Text(context.tr('ch_confirm_cancel')),
                           ),
                         ],
                       ),
                     );
                     if (confirm == true && mounted) {
-                      await context.read<AppProvider>().cancelChargement(ch.id);
+                      await appProvider.cancelChargement(ch.id);
                       widget.onBack();
                     }
                   },
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text(
-                    'ANNULER',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  label: Text(
+                    context.tr('cancel').toUpperCase(),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
@@ -1498,7 +1513,7 @@ class _SessionViewState extends State<_SessionView> {
                     size: 18,
                   ),
                   label: Text(
-                    ch.status == ChargementStatus.pause ? 'REPRENDRE' : 'PAUSE',
+                    ch.status == ChargementStatus.pause ? context.tr('ch_reprendre').toUpperCase() : context.tr('ch_pause').toUpperCase(),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -1523,9 +1538,9 @@ class _SessionViewState extends State<_SessionView> {
                           widget.onFinished(finished.id);
                         },
                   icon: const Icon(Icons.check, size: 18),
-                  label: const Text(
-                    'TERMINER',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                  label: Text(
+                    context.tr('ch_terminer').toUpperCase(),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
@@ -1542,24 +1557,43 @@ class _SessionViewState extends State<_SessionView> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _Tot(label: 'NB BIG BAGS', value: '${bbs.length}')),
-                const SizedBox(width: 8),
-                Expanded(child: _Tot(label: 'POIDS BRUT', value: '${fmt.format(brut)} kg')),
-                const SizedBox(width: 8),
                 Expanded(
                   child: _Tot(
-                    label: 'TARE',
-                    value: '- ${fmt.format(tare)}',
-                    color: isDark ? AppColors.sunOnDark : AppColors.sun,
+                    label: context.tr('ch_nb_bb').toUpperCase(),
+                    value: '${bbs.length}',
+                    bgColor: box1Bg,
+                    textColor: boxTextColor,
+                    valueColor: boxValueColor,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _Tot(
-                    label: 'POIDS NET',
-                    value: '${fmt.format(net)} kg',
-                    filled: true,
-                    leaf: leaf,
+                    label: context.tr('ch_brut').toUpperCase(),
+                    value: '${fmt.format(brut)} ${context.tr('kg')}',
+                    bgColor: box2Bg,
+                    textColor: boxTextColor,
+                    valueColor: boxValueColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Tot(
+                    label: context.tr('ch_tare').toUpperCase(),
+                    value: '- ${fmt.format(tare)} ${context.tr('kg')}',
+                    bgColor: box3Bg,
+                    textColor: boxTextColor,
+                    valueColor: boxValueColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Tot(
+                    label: context.tr('ch_net').toUpperCase(),
+                    value: '${fmt.format(net)} ${context.tr('kg')}',
+                    bgColor: box4Bg,
+                    textColor: boxTextColor,
+                    valueColor: boxValueColor,
                   ),
                 ),
               ],
@@ -1578,32 +1612,32 @@ class _SessionViewState extends State<_SessionView> {
 class _Tot extends StatelessWidget {
   final String label;
   final String value;
-  final Color? color;
-  final bool filled;
-  final Color? leaf;
+  final Color bgColor;
+  final Color textColor;
+  final Color valueColor;
+
   const _Tot({
     required this.label,
     required this.value,
-    this.color,
-    this.filled = false,
-    this.leaf,
+    required this.bgColor,
+    required this.textColor,
+    required this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final card = isDark ? AppColors.cardDark : AppColors.card;
-    final line = isDark ? AppColors.lineDark : AppColors.line;
-    final ink = isDark ? AppColors.inkOnDark : AppColors.ink;
-    final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
-    final leafColor = leaf ?? (isDark ? AppColors.leafOnDark : AppColors.leaf);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: filled ? leafColor : card,
-        border: filled ? null : Border.all(color: line),
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1614,23 +1648,22 @@ class _Tot extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: filled ? Colors.white70 : mute,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               value,
               style: AppTextStyles.monoWeight(
-                26,
-                FontWeight.w800,
-                color: filled
-                    ? Colors.white
-                    : (color ?? ink),
+                28,
+                FontWeight.w900,
+                color: valueColor,
               ),
             ),
           ),
@@ -1705,14 +1738,6 @@ class _StockSuggestionCard extends StatelessWidget {
                   17,
                   FontWeight.w600,
                   color: textCodeColor.withValues(alpha: 0.8),
-                ),
-              ),
-              Text(
-                bb.qualite.label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textCodeColor.withValues(alpha: 0.85),
                 ),
               ),
             ],

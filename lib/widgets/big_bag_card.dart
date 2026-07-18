@@ -24,7 +24,7 @@ class BigBagCard extends StatelessWidget {
       BigBagStatus.expedie => dim,
     };
 
-    final fmt = NumberFormat('#,##0', 'fr_FR');
+    final fmt = NumberFormat('#,##0.##', 'fr_FR');
     final dtFmt = DateFormat('dd MMM HH:mm', 'fr_FR');
 
     return Container(

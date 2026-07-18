@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import 'production_screen.dart';
 import 'stock_screen.dart';
@@ -31,11 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   static const _destinations = [
-    (icon: Icons.autorenew, label: 'Production'),
-    (icon: Icons.inventory_2_outlined, label: 'Stock'),
-    (icon: Icons.local_shipping_outlined, label: 'Chargement'),
-    (icon: Icons.history, label: 'Historique'),
-    (icon: Icons.settings_outlined, label: 'Réglages'),
+    (icon: Icons.autorenew, label: 'nav_production'),
+    (icon: Icons.inventory_2_outlined, label: 'nav_stock'),
+    (icon: Icons.local_shipping_outlined, label: 'nav_chargement'),
+    (icon: Icons.history, label: 'nav_historique'),
+    (icon: Icons.settings_outlined, label: 'nav_reglages'),
   ];
 
   @override
@@ -80,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) => setState(() => _index = i),
         items: [
           for (final d in _destinations)
-            BottomNavigationBarItem(icon: Icon(d.icon), label: d.label),
+            BottomNavigationBarItem(icon: Icon(d.icon), label: context.tr(d.label)),
         ],
       ),
     );
@@ -123,7 +124,7 @@ class _SideNav extends StatelessWidget {
             Expanded(
               child: _SideNavItem(
                 icon: destinations[i].icon,
-                label: destinations[i].label,
+                label: context.tr(destinations[i].label),
                 selected: index == i,
                 selectedBg: selectedBg,
                 selectedColor: selectedColor,
@@ -138,8 +139,9 @@ class _SideNav extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
               child: Text(
-                'v1.0 · Industriel',
-                style: TextStyle(fontSize: 14, color: mute, fontWeight: FontWeight.w500),
+                context.tr('set_version'),
+                style: TextStyle(fontSize: 12, color: mute, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
               ),
             ),
         ],

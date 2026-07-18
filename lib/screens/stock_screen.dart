@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bb_code_keypad.dart';
 
@@ -71,7 +72,16 @@ class _StockScreenState extends State<StockScreen> {
     final mute = isDark ? AppColors.inkMuteDark : AppColors.inkMute;
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final leaf = isDark ? AppColors.leafOnDark : AppColors.leaf;
-    final fmt = NumberFormat('#,##0', 'fr_FR');
+    final fmt = NumberFormat('#,##0.##', 'fr_FR');
+
+    // Memorable high-contrast colors for outdoor usage (sun exposure)
+    final box1Bg = isDark ? const Color(0xFF065F46) : const Color(0xFF059669); // Emerald Green (EN STOCK)
+    final box2Bg = isDark ? const Color(0xFF9A3412) : const Color(0xFFEA580C); // Orange (POIDS)
+    final box3Bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFF2563EB); // Royal Blue (CHARGÉS)
+    final box4Bg = isDark ? const Color(0xFF881337) : const Color(0xFFBE123C); // Clay/Rose/Red (EXPÉDIÉS)
+
+    final boxTextColor = Colors.white.withValues(alpha: 0.76);
+    final boxValueColor = Colors.white;
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
 
     final dateFilteredBags = app.bigBags.where((b) {
@@ -95,7 +105,12 @@ class _StockScreenState extends State<StockScreen> {
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 700;
 
-    const cols = ['ID', 'POIDS BRUT', 'CRÉÉ', 'STATUT'];
+    final cols = [
+      context.tr('bon_num'),
+      context.tr('prod_poids'),
+      context.tr('bon_date'),
+      context.tr('nav_stock'),
+    ];
     const flexes = [4, 3, 4, 3];
 
     Widget cell(String text, {bool bold = false, Color? color}) => Text(
@@ -129,7 +144,7 @@ class _StockScreenState extends State<StockScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Stock Big Bags',
+                              context.tr('stock_title'),
                               style: TextStyle(
                                 fontSize: 42,
                                 fontWeight: FontWeight.w800,
@@ -138,7 +153,7 @@ class _StockScreenState extends State<StockScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Vue temps réel — synchronisée localement',
+                              context.tr('stock_subtitle'),
                               style: TextStyle(
                                 fontSize: 21,
                                 color: mute,
@@ -190,7 +205,7 @@ class _StockScreenState extends State<StockScreen> {
                                         }),
                                       ] else ...[
                                         Text(
-                                          _search.isEmpty ? 'Chercher BB-...' : _search,
+                                          _search.isEmpty ? context.tr('stock_search') : _search,
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w500,
@@ -260,7 +275,7 @@ class _StockScreenState extends State<StockScreen> {
                                   }),
                                 ] else ...[
                                   Text(
-                                    _search.isEmpty ? 'Chercher BB-...' : _search,
+                                    _search.isEmpty ? context.tr('stock_search') : _search,
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w500,
@@ -299,13 +314,53 @@ class _StockScreenState extends State<StockScreen> {
                   // ── Stat tiles ─────────────────────────────────────────
                   Row(
                     children: [
-                      Expanded(child: _StatTile(label: 'EN STOCK', value: '${app.stockCount}', unit: 'BB', fmt: fmt, accentColor: AppColors.leaf)),
+                      Expanded(
+                        child: _StatTile(
+                          label: context.tr('st_stock'),
+                          value: '${app.stockCount}',
+                          unit: 'BB',
+                          fmt: fmt,
+                          bgColor: box1Bg,
+                          textColor: boxTextColor,
+                          valueColor: boxValueColor,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _StatTile(label: 'POIDS', value: fmt.format(app.stockPoidsTotal), unit: 'kg', fmt: fmt, accentColor: AppColors.sun)),
+                      Expanded(
+                        child: _StatTile(
+                          label: context.tr('stock_poids_total'),
+                          value: fmt.format(app.stockPoidsTotal),
+                          unit: 'kg',
+                          fmt: fmt,
+                          bgColor: box2Bg,
+                          textColor: boxTextColor,
+                          valueColor: boxValueColor,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _StatTile(label: 'CHARGÉS', value: '${app.chargeCount}', unit: 'BB', fmt: fmt, accentColor: const Color(0xFF3B82F6))),
+                      Expanded(
+                        child: _StatTile(
+                          label: context.tr('stock_filter_charge'),
+                          value: '${app.chargeCount}',
+                          unit: 'BB',
+                          fmt: fmt,
+                          bgColor: box3Bg,
+                          textColor: boxTextColor,
+                          valueColor: boxValueColor,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: _StatTile(label: 'EXPÉDIÉS', value: '${app.expedieCount}', unit: 'BB', fmt: fmt, accentColor: AppColors.clay)),
+                      Expanded(
+                        child: _StatTile(
+                          label: context.tr('stock_filter_expedie'),
+                          value: '${app.expedieCount}',
+                          unit: 'BB',
+                          fmt: fmt,
+                          bgColor: box4Bg,
+                          textColor: boxTextColor,
+                          valueColor: boxValueColor,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -322,28 +377,28 @@ class _StockScreenState extends State<StockScreen> {
                             child: Row(
                               children: [
                                 _FilterChip(
-                                  label: 'TOUT',
+                                  label: context.tr('stock_filter_all'),
                                   count: dateFilteredTotal,
                                   active: _filter == null,
                                   onTap: () => setState(() => _filter = null),
                                 ),
                                 const SizedBox(width: 10),
                                 _FilterChip(
-                                  label: 'EN STOCK',
+                                  label: context.tr('stock_filter_stock'),
                                   count: dateFilteredStock,
                                   active: _filter == BigBagStatus.stock,
                                   onTap: () => setState(() => _filter = BigBagStatus.stock),
                                 ),
                                 const SizedBox(width: 10),
                                 _FilterChip(
-                                  label: 'CHARGÉ',
+                                  label: context.tr('stock_filter_charge'),
                                   count: dateFilteredCharge,
                                   active: _filter == BigBagStatus.charge,
                                   onTap: () => setState(() => _filter = BigBagStatus.charge),
                                 ),
                                 const SizedBox(width: 10),
                                 _FilterChip(
-                                  label: 'EXPÉDIÉ',
+                                  label: context.tr('stock_filter_expedie'),
                                   count: dateFilteredExpedie,
                                   active: _filter == BigBagStatus.expedie,
                                   onTap: () => setState(() => _filter = BigBagStatus.expedie),
@@ -370,7 +425,7 @@ class _StockScreenState extends State<StockScreen> {
                             child: Row(
                               children: [
                                 _FilterChip(
-                                  label: 'TOUT',
+                                  label: context.tr('stock_filter_all'),
                                   count: dateFilteredTotal,
                                   active: _filter == null,
                                   onTap: () => setState(() => _filter = null),
@@ -378,7 +433,7 @@ class _StockScreenState extends State<StockScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 _FilterChip(
-                                  label: 'EN STOCK',
+                                  label: context.tr('stock_filter_stock'),
                                   count: dateFilteredStock,
                                   active: _filter == BigBagStatus.stock,
                                   onTap: () => setState(() => _filter = BigBagStatus.stock),
@@ -386,7 +441,7 @@ class _StockScreenState extends State<StockScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 _FilterChip(
-                                  label: 'CHARGÉ',
+                                  label: context.tr('stock_filter_charge'),
                                   count: dateFilteredCharge,
                                   active: _filter == BigBagStatus.charge,
                                   onTap: () => setState(() => _filter = BigBagStatus.charge),
@@ -394,7 +449,7 @@ class _StockScreenState extends State<StockScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 _FilterChip(
-                                  label: 'EXPÉDIÉ',
+                                  label: context.tr('stock_filter_expedie'),
                                   count: dateFilteredExpedie,
                                   active: _filter == BigBagStatus.expedie,
                                   onTap: () => setState(() => _filter = BigBagStatus.expedie),
@@ -447,7 +502,7 @@ class _StockScreenState extends State<StockScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Center(
                       child: Text(
-                        'Aucun Big Bag',
+                        context.tr('stock_empty'),
                         style: TextStyle(color: mute, fontSize: 20),
                       ),
                     ),
@@ -506,7 +561,7 @@ class _StockScreenState extends State<StockScreen> {
                             ),
                             Expanded(
                               flex: flexes[1],
-                              child: cell('${bb.poidsBrut.toStringAsFixed(0)} kg', color: codeColor.withValues(alpha: 0.85)),
+                              child: cell('${fmt.format(bb.poidsBrut)} ${context.tr('kg')}', color: codeColor.withValues(alpha: 0.85)),
                             ),
                             Expanded(
                               flex: flexes[2],
@@ -536,31 +591,34 @@ class _StatTile extends StatelessWidget {
   final String value;
   final String unit;
   final NumberFormat fmt;
-  final Color accentColor;
+  final Color bgColor;
+  final Color textColor;
+  final Color valueColor;
 
   const _StatTile({
     required this.label,
     required this.value,
     required this.unit,
     required this.fmt,
-    required this.accentColor,
+    required this.bgColor,
+    required this.textColor,
+    required this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Derive tint from accent
-    final cardBg = accentColor.withValues(alpha: isDark ? 0.12 : 0.08);
-    final borderColor = accentColor.withValues(alpha: isDark ? 0.3 : 0.25);
-
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: cardBg,
-        border: Border.all(color: borderColor),
+        color: bgColor,
         borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,9 +627,9 @@ class _StatTile extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: accentColor.withValues(alpha: isDark ? 0.8 : 0.75),
-              letterSpacing: 0.4,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 6),
@@ -585,17 +643,21 @@ class _StatTile extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     value,
-                    style: AppTextStyles.monoWeight(36, FontWeight.w800, color: accentColor),
+                    style: AppTextStyles.monoWeight(
+                      36,
+                      FontWeight.w900,
+                      color: valueColor,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 unit,
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: accentColor.withValues(alpha: 0.7),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
                 ),
               ),
             ],
@@ -692,9 +754,9 @@ class _StatusBadge extends StatelessWidget {
     };
 
     final label = switch (status) {
-      BigBagStatus.stock => 'EN STOCK',
-      BigBagStatus.charge => 'CHARGÉ',
-      BigBagStatus.expedie => 'EXPÉDIÉ',
+      BigBagStatus.stock => context.tr('st_stock'),
+      BigBagStatus.charge => context.tr('st_charge'),
+      BigBagStatus.expedie => context.tr('st_expedie'),
     };
 
     return Container(
@@ -735,8 +797,8 @@ class _DateFilterButton extends StatelessWidget {
         selectedDate!.day == today.day;
 
     final label = selectedDate == null
-        ? 'Toutes les dates'
-        : (isToday ? "Aujourd'hui" : dateFmt.format(selectedDate!));
+        ? context.tr('stock_all_dates')
+        : (isToday ? context.tr('stock_today') : dateFmt.format(selectedDate!));
 
     return Row(
       mainAxisSize: MainAxisSize.min,

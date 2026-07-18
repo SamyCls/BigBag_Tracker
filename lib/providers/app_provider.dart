@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../db/big_bag_dao.dart';
 import '../db/chargement_dao.dart';
 import '../db/database_helper.dart';
@@ -258,8 +259,9 @@ class AppProvider extends ChangeNotifier {
     for (final bb in bbs) {
       await _bbDao.updateStatus(bb.id, BigBagStatus.expedie, chargementId: id);
       final idx = _bigBags.indexWhere((b) => b.id == bb.id);
-      if (idx != -1)
+      if (idx != -1) {
         _bigBags[idx] = _bigBags[idx].copyWith(status: BigBagStatus.expedie);
+      }
     }
     _bbByChargement[id] = bbs
         .map((b) => b.copyWith(status: BigBagStatus.expedie))
@@ -278,8 +280,9 @@ class AppProvider extends ChangeNotifier {
   // ---------------------------------------------------------------------
 
   Future<List<BigBag>> bigBagsForBon(int chargementId) async {
-    if (_bbByChargement.containsKey(chargementId))
+    if (_bbByChargement.containsKey(chargementId)) {
       return _bbByChargement[chargementId]!;
+    }
     final list = await _bbDao.getByChargement(chargementId);
     _bbByChargement[chargementId] = list;
     return list;
@@ -289,8 +292,12 @@ class AppProvider extends ChangeNotifier {
   // Réglages
   // ---------------------------------------------------------------------
 
-  Future<void> resetAllData() async {
+  Future<void> resetAllData({bool resetSequence = false}) async {
     await DatabaseHelper.instance.resetAll();
+    if (resetSequence) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_big_bag_id');
+    }
     _bbByChargement.clear();
     await _reloadAll();
     notifyListeners();

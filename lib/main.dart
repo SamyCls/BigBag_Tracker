@@ -4,12 +4,14 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR');
+  await initializeDateFormatting('ar');
   runApp(const BigBagManagerApp());
 }
 
@@ -25,15 +27,17 @@ class BigBagManagerApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()..init()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..load()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()..load()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, themeProvider, languageProvider, _) {
           return MaterialApp(
             title: 'BigBag',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: themeProvider.mode,
+            locale: languageProvider.locale,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
@@ -41,6 +45,7 @@ class BigBagManagerApp extends StatelessWidget {
             ],
             supportedLocales: const [
               Locale('fr', 'FR'),
+              Locale('ar', 'DZ'),
               Locale('en', 'US'),
             ],
             home: const SplashScreen(),

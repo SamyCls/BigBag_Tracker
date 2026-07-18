@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/big_bag.dart';
 import '../providers/app_provider.dart';
+import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/numeric_keypad.dart';
 import '../utils/toast.dart';
@@ -31,7 +32,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
       qualite: Quality.clair,
     );
     if (!mounted) return;
-    showAppToast(context, '${bb.code} créé · écrire ce numéro sur le sac');
+    showAppToast(context, '${bb.code} ${context.tr('prod_created')} · ${context.tr('prod_ecrire_sac')}');
     setState(() {
       _weight = '';
       _entering = false;
@@ -102,17 +103,17 @@ class _ProductionScreenState extends State<ProductionScreen> {
     }).toList();
 
     final heading = isToday
-        ? "Produits d'aujourd'hui"
-        : 'Produits du ${dateFmt.format(selectedDate)}';
+        ? context.tr('prod_today')
+        : '${context.tr('prod_from')} ${dateFmt.format(selectedDate)}';
     final emptyMsg = isToday
-        ? "Aucun Big Bag produit aujourd'hui"
-        : 'Aucun Big Bag produit ce jour-là';
+        ? context.tr('prod_empty_today')
+        : context.tr('prod_empty_day');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Production Big Bag',
+          context.tr('prod_title'),
           style: TextStyle(
             fontSize: 42,
             fontWeight: FontWeight.w800,
@@ -121,7 +122,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Tapez pour créer un nouveau Big Bag · pesée manuelle',
+          context.tr('prod_subtitle'),
           style: TextStyle(fontSize: 21, color: mute, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 20),
@@ -180,7 +181,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              isToday ? 'Changer la date' : 'Changer',
+                              isToday ? context.tr('prod_changer_date') : context.tr('prod_changer'),
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -196,7 +197,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               ],
             ),
             Text(
-              '${recent.length} sac(s)',
+              '${recent.length} ${context.tr('prod_sacs')}',
               style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w600),
             ),
           ],
@@ -241,7 +242,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Nouveau Big Bag',
+                context.tr('prod_new'),
                 style: TextStyle(
                   fontSize: 38,
                   fontWeight: FontWeight.w800,
@@ -250,7 +251,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'ID prévu : ${app.nextBBCode} · écrivez ce numéro au marqueur sur le sac',
+                '${context.tr('prod_id_prevu')} : ${app.nextBBCode} · ${context.tr('prod_ecrire_sac')}',
                 style: TextStyle(fontSize: 19, color: mute, fontWeight: FontWeight.w500),
               ),
             ],
@@ -262,7 +263,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
             _weight = '';
           }),
           icon: const Icon(Icons.arrow_back, size: 22),
-          label: const Text('Retour', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          label: Text(context.tr('back'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         ),
       ],
     );
@@ -364,12 +365,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
                 fit: BoxFit.scaleDown,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.check, size: 48, color: Colors.white),
-                    SizedBox(width: 14),
+                  children: [
+                    const Icon(Icons.check, size: 48, color: Colors.white),
+                    const SizedBox(width: 14),
                     Text(
-                      'VALIDER',
-                      style: TextStyle(
+                      context.tr('prod_valider'),
+                      style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -397,12 +398,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
                 fit: BoxFit.scaleDown,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.check, size: 28, color: Colors.white),
-                    SizedBox(width: 10),
+                  children: [
+                    const Icon(Icons.check, size: 28, color: Colors.white),
+                    const SizedBox(width: 10),
                     Text(
-                      'VALIDER',
-                      style: TextStyle(
+                      context.tr('prod_valider'),
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -427,7 +428,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  'ID GÉNÉRÉ AUTOMATIQUEMENT',
+                  context.tr('prod_id_auto'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -452,7 +453,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  'Écrire ce numéro sur le sac',
+                  context.tr('prod_ecrire_sac'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -543,12 +544,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
               fit: BoxFit.scaleDown,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.check, size: 28, color: Colors.white),
-                  SizedBox(width: 10),
+                children: [
+                  const Icon(Icons.check, size: 28, color: Colors.white),
+                  const SizedBox(width: 10),
                   Text(
-                    'VALIDER',
-                    style: TextStyle(
+                    context.tr('prod_valider'),
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -572,7 +573,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  'ID GÉNÉRÉ AUTOMATIQUEMENT',
+                  context.tr('prod_id_auto'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -597,7 +598,7 @@ class _ProductionScreenState extends State<ProductionScreen> {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  'Écrire ce numéro sur le sac',
+                  context.tr('prod_ecrire_sac'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -639,13 +640,13 @@ class _WeightDisplay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'POIDS BRUT',
+            context.tr('prod_poids'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: mute,
               letterSpacing: 0.5,
-          ),
+            ),
           ),
           const SizedBox(height: 6),
           FittedBox(
@@ -665,7 +666,7 @@ class _WeightDisplay extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'kg',
+                  context.tr('prod_kg'),
                   style: TextStyle(
                     fontSize: 28,
                     color: mute,
@@ -718,23 +719,23 @@ class _TicketCta extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 20),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'NOUVEAU BIG BAG',
-                      style: TextStyle(
+                      context.tr('prod_new'),
+                      style: const TextStyle(
                         fontSize: 38,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: -0.3,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
-                      'Pesée · qualité · validation en 3 taps',
-                      style: TextStyle(
+                      context.tr('prod_intro_subtitle'),
+                      style: const TextStyle(
                         fontSize: 21,
                         color: Colors.white70,
                         fontWeight: FontWeight.w600,
@@ -777,8 +778,14 @@ class _RecentTable extends StatelessWidget {
     final card = isDark ? AppColors.cardDark : AppColors.card;
     final line = isDark ? AppColors.lineDark : AppColors.line;
     final fmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
+    final weightFmt = NumberFormat('#,##0.##', 'fr_FR');
 
-    const cols = ['ID', 'POIDS BRUT', 'CRÉÉ', 'STATUT'];
+    final cols = [
+      context.tr('bon_num'),
+      context.tr('prod_poids'),
+      context.tr('bon_date'),
+      context.tr('nav_stock'),
+    ];
     const flexes = [4, 3, 4, 3];
 
     Color getStatusColor(BigBagStatus status) {
@@ -870,7 +877,7 @@ class _RecentTable extends StatelessWidget {
                   Expanded(
                     flex: flexes[1],
                     child: cell(
-                      '${bags[i].poidsBrut.toStringAsFixed(0)} kg',
+                      '${weightFmt.format(bags[i].poidsBrut)} kg',
                       color: getStatusColor(bags[i].status).withValues(alpha: 0.85),
                     ),
                   ),
@@ -923,9 +930,9 @@ class _StatusBadge extends StatelessWidget {
     };
 
     final label = switch (status) {
-      BigBagStatus.stock => 'EN STOCK',
-      BigBagStatus.charge => 'CHARGÉ',
-      BigBagStatus.expedie => 'EXPÉDIÉ',
+      BigBagStatus.stock => context.tr('st_stock'),
+      BigBagStatus.charge => context.tr('st_charge'),
+      BigBagStatus.expedie => context.tr('st_expedie'),
     };
 
     return Container(

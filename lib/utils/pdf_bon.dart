@@ -14,7 +14,7 @@ class PdfBonGenerator {
     required List<BigBag> bigBags,
   }) async {
     final doc = pw.Document();
-    final fmt = NumberFormat('#,##0', 'fr_FR');
+    final fmt = NumberFormat('#,##0.##', 'fr_FR');
     final dateFmt = DateFormat('dd/MM/yyyy à HH:mm', 'fr_FR');
 
     final brut = bigBags.fold(0.0, (s, b) => s + b.poidsBrut);

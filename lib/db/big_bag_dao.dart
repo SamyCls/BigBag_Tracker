@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/big_bag.dart';
 import 'database_helper.dart';
 
@@ -11,7 +12,8 @@ class BigBagDao {
   Future<Database> get _db async => _helper.database;
 
   /// Crée un nouveau Big Bag. L'ID/code est auto-généré à partir du
-  /// prochain compteur disponible (MAX(id)+1), garantissant BB-000001, etc.
+  /// prochain compteur disponible (MAX(id)+1), ou du dernier compteur sauvegardé,
+  /// garantissant la continuité même après réinitialisation des données.
   Future<BigBag> create({
     required double poidsBrut,
     required Quality qualite,
@@ -19,13 +21,18 @@ class BigBagDao {
     final db = await _db;
     return db.transaction((txn) async {
       final res = await txn.rawQuery(
-        'SELECT COALESCE(MAX(id), 0) + 1 as nextId FROM big_bags',
+        'SELECT COALESCE(MAX(id), 0) as maxId FROM big_bags',
       );
-      final nextId = res.first['nextId'] as int;
+      final maxId = res.first['maxId'] as int? ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final lastId = prefs.getInt('last_big_bag_id') ?? 0;
+      final nextId = (maxId > lastId ? maxId : lastId) + 1;
+
       final code = BigBag.padCode(nextId);
       final now = DateTime.now();
 
       final id = await txn.insert('big_bags', {
+        'id': nextId,
         'code': code,
         'poids_brut': poidsBrut,
         'qualite': qualite.dbValue,
@@ -33,6 +40,8 @@ class BigBagDao {
         'created_at': now.toIso8601String(),
         'chargement_id': null,
       });
+
+      await prefs.setInt('last_big_bag_id', nextId);
 
       return BigBag(
         id: id,
@@ -49,9 +58,12 @@ class BigBagDao {
   Future<String> peekNextCode() async {
     final db = await _db;
     final res = await db.rawQuery(
-      'SELECT COALESCE(MAX(id), 0) + 1 as nextId FROM big_bags',
+      'SELECT COALESCE(MAX(id), 0) as maxId FROM big_bags',
     );
-    final nextId = res.first['nextId'] as int;
+    final maxId = res.first['maxId'] as int? ?? 0;
+    final prefs = await SharedPreferences.getInstance();
+    final lastId = prefs.getInt('last_big_bag_id') ?? 0;
+    final nextId = (maxId > lastId ? maxId : lastId) + 1;
     return BigBag.padCode(nextId);
   }
 
