@@ -147,21 +147,29 @@ class _HistoriqueScreenState extends State<HistoriqueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ──────────────────────────────────────────────────
-            Text(
-              context.tr('hist_title'),
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${all.length} / ${app.terminatedChargements.length} ${context.tr('hist_subtitle')}',
-              style: TextStyle(
-                fontSize: 16,
-                color: mute,
-                fontWeight: FontWeight.w500,
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    context.tr('hist_title'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${all.length} / ${app.terminatedChargements.length} ${context.tr('hist_subtitle')}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: mute,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 14),

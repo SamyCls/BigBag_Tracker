@@ -27,20 +27,26 @@ class ReglagesScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Réglages',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: ink,
+                Center(
+                  child: Text(
+                    'Réglages',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: ink,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  'Préférences locales de cette tablette',
-                  style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
+                Center(
+                  child: Text(
+                    'Préférences locales de cette tablette',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w500),
+                  ),
                 ),
                 const SizedBox(height: 20),
 

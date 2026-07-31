@@ -114,16 +114,16 @@ class _ListView extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (isLandscape)
+          children: [             if (isLandscape)
               Row(
                 children: [
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           context.tr('ch_title'),
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.w800,
@@ -135,6 +135,7 @@ class _ListView extends StatelessWidget {
                           context.watch<LanguageProvider>().languageCode == 'ar'
                               ? 'أنشئ أو استأنف شحنة · لا يوجد فقدان للبيانات'
                               : 'Créez ou reprenez une session ',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 20,
                             color: mute,
@@ -168,10 +169,11 @@ class _ListView extends StatelessWidget {
               )
             else
               Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     context.tr('ch_title'),
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w800,
@@ -183,6 +185,7 @@ class _ListView extends StatelessWidget {
                     context.watch<LanguageProvider>().languageCode == 'ar'
                         ? 'أنشئ أو استأنف شحنة · لا يوجد فقدان للبيانات'
                         : 'Créez ou reprenez une session · pas de perte de données',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 20,
                       color: mute,

@@ -85,28 +85,46 @@ class _StockScreenState extends State<StockScreen> {
     final boxValueColor = Colors.white;
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
 
-    final dateFilteredBags = app.bigBags.where((b) {
-      if (_selectedDate == null) return true;
-      return b.createdAt.year == _selectedDate!.year &&
-          b.createdAt.month == _selectedDate!.month &&
-          b.createdAt.day == _selectedDate!.day;
-    }).toList();
+    int dateFilteredTotal = 0;
+    int dateFilteredStock = 0;
+    int dateFilteredCharge = 0;
+    int dateFilteredExpedie = 0;
+    double dateFilteredStockPoids = 0.0;
 
-    final dateFilteredTotal = dateFilteredBags.length;
-    final dateFilteredStock = dateFilteredBags.where((b) => b.status == BigBagStatus.stock).length;
-    final dateFilteredCharge = dateFilteredBags.where((b) => b.status == BigBagStatus.charge).length;
-    final dateFilteredExpedie = dateFilteredBags.where((b) => b.status == BigBagStatus.expedie).length;
-    final dateFilteredStockPoids = dateFilteredBags
-        .where((b) => b.status == BigBagStatus.stock)
-        .fold(0.0, (sum, b) => sum + b.poidsBrut);
+    if (!_showSearchPad) {
+      for (final b in app.bigBags) {
+        if (_selectedDate != null) {
+          final isSameDay = b.createdAt.year == _selectedDate!.year &&
+              b.createdAt.month == _selectedDate!.month &&
+              b.createdAt.day == _selectedDate!.day;
+          if (!isSameDay) continue;
+        }
+        dateFilteredTotal++;
+        switch (b.status) {
+          case BigBagStatus.stock:
+            dateFilteredStock++;
+            dateFilteredStockPoids += b.poidsBrut;
+            break;
+          case BigBagStatus.charge:
+            dateFilteredCharge++;
+            break;
+          case BigBagStatus.expedie:
+            dateFilteredExpedie++;
+            break;
+        }
+      }
+    }
 
     final List<BigBag> filtered;
     if (_showSearchPad && _search.isNotEmpty) {
       final cleanQuery = _digits.replaceFirst(RegExp(r'^0+'), '');
       if (cleanQuery.isEmpty) {
-        filtered = app.bigBags;
+        filtered = const [];
       } else {
-        filtered = app.bigBags.where((b) => b.code.contains(cleanQuery)).toList();
+        filtered = app.bigBags
+            .where((b) => b.code.contains(cleanQuery))
+            .take(20)
+            .toList();
       }
     } else {
       filtered = app.filterBigBags(status: _filter, search: _search).where((b) {
@@ -136,7 +154,7 @@ class _StockScreenState extends State<StockScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Title row
                   Row(
@@ -144,10 +162,11 @@ class _StockScreenState extends State<StockScreen> {
                     children: [
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               context.tr('stock_title'),
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 42,
                                 fontWeight: FontWeight.w800,
@@ -157,6 +176,7 @@ class _StockScreenState extends State<StockScreen> {
                             const SizedBox(height: 6),
                             Text(
                               context.tr('stock_subtitle'),
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 21,
                                 color: mute,
