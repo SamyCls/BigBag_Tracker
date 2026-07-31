@@ -22,14 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
   bool _sideNavCollapsed = false;
-
-  static const _screens = [
-    ProductionScreen(),
-    StockScreen(),
-    ChargementScreen(),
-    HistoriqueScreen(),
-    ReglagesScreen(),
-  ];
+  int _productionKeyVersion = 0;
 
   static const _destinations = [
     (icon: Icons.autorenew, label: 'nav_production'),
@@ -38,6 +31,15 @@ class _HomeScreenState extends State<HomeScreen> {
     (icon: Icons.history, label: 'nav_historique'),
     (icon: Icons.settings_outlined, label: 'nav_reglages'),
   ];
+
+  void _onTabChanged(int i) {
+    setState(() {
+      if (_index == 0 && i != 0) {
+        _productionKeyVersion++;
+      }
+      _index = i;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (app.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    final screens = [
+      ProductionScreen(key: ValueKey(_productionKeyVersion)),
+      const StockScreen(),
+      const ChargementScreen(),
+      const HistoriqueScreen(),
+      const ReglagesScreen(),
+    ];
 
     // ── Tablets & Wide Screens (width >= 700): permanent sidebar ───────
     if (isWide) {
@@ -61,11 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 stockCount: app.stockCount,
                 collapsed: _sideNavCollapsed,
                 onToggle: () => setState(() => _sideNavCollapsed = !_sideNavCollapsed),
-                onTap: (i) => setState(() => _index = i),
+                onTap: _onTabChanged,
               ),
               const VerticalDivider(width: 1),
               Expanded(
-                child: IndexedStack(index: _index, children: _screens),
+                child: IndexedStack(index: _index, children: screens),
               ),
             ],
           ),
@@ -75,10 +85,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ── Mobile: bottom navigation bar ────────────────────────────────
     return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
+      body: IndexedStack(index: _index, children: screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+        onTap: _onTabChanged,
         items: [
           for (final d in _destinations)
             BottomNavigationBarItem(icon: Icon(d.icon), label: context.tr(d.label)),

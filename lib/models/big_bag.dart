@@ -70,6 +70,8 @@ class BigBag {
   double get poidsNet => poidsBrut - tareKg;
 
   BigBag copyWith({
+    double? poidsBrut,
+    Quality? qualite,
     BigBagStatus? status,
     int? chargementId,
     bool clearChargementId = false,
@@ -77,8 +79,8 @@ class BigBag {
     return BigBag(
       id: id,
       code: code,
-      poidsBrut: poidsBrut,
-      qualite: qualite,
+      poidsBrut: poidsBrut ?? this.poidsBrut,
+      qualite: qualite ?? this.qualite,
       status: status ?? this.status,
       createdAt: createdAt,
       chargementId: clearChargementId

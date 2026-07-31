@@ -27,12 +27,12 @@ class _ProductionScreenState extends State<ProductionScreen> {
     final cleanWeight = _weight.replaceAll(',', '.');
     final w = double.tryParse(cleanWeight);
     if (w == null || w < 50) return;
-    final bb = await app.createBigBag(
-      poidsBrut: w,
-      qualite: Quality.clair,
-    );
+    final bb = await app.createBigBag(poidsBrut: w, qualite: Quality.clair);
     if (!mounted) return;
-    showAppToast(context, '${bb.code} ${context.tr('prod_created')} · ${context.tr('prod_ecrire_sac')}');
+    showAppToast(
+      context,
+      '${bb.code} ${context.tr('prod_created')} · ${context.tr('prod_ecrire_sac')}',
+    );
     setState(() {
       _weight = '';
       _entering = false;
@@ -90,13 +90,14 @@ class _ProductionScreenState extends State<ProductionScreen> {
   ) {
     final now = DateTime.now();
     final selectedDate = _historyDate;
-    final isToday = selectedDate.year == now.year &&
+    final isToday =
+        selectedDate.year == now.year &&
         selectedDate.month == now.month &&
         selectedDate.day == now.day;
 
     final dateFmt = DateFormat('d MMMM yyyy', 'fr_FR');
 
-    final recent = app.recentBigBags().where((b) {
+    final recent = app.bigBags.where((b) {
       return b.createdAt.year == selectedDate.year &&
           b.createdAt.month == selectedDate.month &&
           b.createdAt.day == selectedDate.day;
@@ -112,21 +113,36 @@ class _ProductionScreenState extends State<ProductionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          context.tr('prod_title'),
-          style: TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.w800,
-            color: ink,
+        Center(
+          child: Text(
+            context.tr('prod_title'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.w800,
+              color: ink,
+            ),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          context.tr('prod_subtitle'),
-          style: TextStyle(fontSize: 21, color: mute, fontWeight: FontWeight.w500),
-        ),
+        if (isToday) ...[
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              context.tr('prod_subtitle'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 21,
+                color: mute,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
-        _TicketCta(onTap: () => setState(() => _entering = true), leaf: leaf),
+        if (isToday)
+          _TicketCta(onTap: () => setState(() => _entering = true), leaf: leaf)
+        else
+          _PastDayBanner(mute: mute),
         const SizedBox(height: 28),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -170,7 +186,10 @@ class _ProductionScreenState extends State<ProductionScreen> {
                         }
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -181,7 +200,9 @@ class _ProductionScreenState extends State<ProductionScreen> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              isToday ? context.tr('prod_changer_date') : context.tr('prod_changer'),
+                              isToday
+                                  ? context.tr('prod_changer_date')
+                                  : context.tr('prod_changer'),
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -198,7 +219,11 @@ class _ProductionScreenState extends State<ProductionScreen> {
             ),
             Text(
               '${recent.length} ${context.tr('prod_sacs')}',
-              style: TextStyle(fontSize: 20, color: mute, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 20,
+                color: mute,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -252,7 +277,11 @@ class _ProductionScreenState extends State<ProductionScreen> {
               const SizedBox(height: 4),
               Text(
                 '${context.tr('prod_id_prevu')} : ${app.nextBBCode} · ${context.tr('prod_ecrire_sac')}',
-                style: TextStyle(fontSize: 19, color: mute, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 19,
+                  color: mute,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -263,7 +292,10 @@ class _ProductionScreenState extends State<ProductionScreen> {
             _weight = '';
           }),
           icon: const Icon(Icons.arrow_back, size: 22),
-          label: Text(context.tr('back'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          label: Text(
+            context.tr('back'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );
@@ -682,8 +714,6 @@ class _WeightDisplay extends StatelessWidget {
   }
 }
 
-
-
 class _TicketCta extends StatelessWidget {
   final VoidCallback onTap;
   final Color leaf;
@@ -761,6 +791,42 @@ class _TicketCta extends StatelessWidget {
 // Table des derniers Big Bags produits
 // ---------------------------------------------------------------------------
 
+class _PastDayBanner extends StatelessWidget {
+  final Color mute;
+  const _PastDayBanner({required this.mute});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: mute.withValues(alpha: 0.25), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 32, color: mute),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              context.tr('prod_past_day_locked'),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: mute,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RecentTable extends StatelessWidget {
   final List<BigBag> bags;
   final Color ink;
@@ -775,173 +841,399 @@ class _RecentTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final card = isDark ? AppColors.cardDark : AppColors.card;
-    final line = isDark ? AppColors.lineDark : AppColors.line;
-    final fmt = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
+    final fmt = DateFormat('HH:mm', 'fr_FR');
     final weightFmt = NumberFormat('#,##0.##', 'fr_FR');
 
-    final cols = [
-      context.tr('bon_num'),
-      context.tr('prod_poids'),
-      context.tr('bon_date'),
-      context.tr('nav_stock'),
-    ];
-    const flexes = [4, 3, 4, 3];
+    // ── vivid status colours ─────────────────────────────────────────────
+    Color rowBg(BigBagStatus s) => switch (s) {
+      BigBagStatus.stock =>
+        isDark ? const Color(0xFF1B4D2E) : const Color(0xFF2E7D32),
+      BigBagStatus.charge =>
+        isDark ? const Color(0xFF4D3800) : const Color(0xFFF57F17),
+      BigBagStatus.expedie => const Color(0xFF881337),
+    };
 
-    Color getStatusColor(BigBagStatus status) {
-      return switch (status) {
-        BigBagStatus.stock => isDark ? AppColors.leafOnDark : AppColors.leaf,
-        BigBagStatus.charge => isDark ? AppColors.sunOnDark : AppColors.sun,
-        BigBagStatus.expedie => isDark ? AppColors.clayOnDark : AppColors.clay,
-      };
-    }
+    Color rowFg(BigBagStatus s) => Colors.white;
 
-    Color getStatusBg(BigBagStatus status) {
-      return switch (status) {
-        BigBagStatus.stock => isDark
-            ? AppColors.leafOnDark.withValues(alpha: 0.08)
-            : AppColors.leafTint.withValues(alpha: 0.5),
-        BigBagStatus.charge => isDark
-            ? AppColors.sunOnDark.withValues(alpha: 0.08)
-            : AppColors.sunTint.withValues(alpha: 0.5),
-        BigBagStatus.expedie => isDark
-            ? AppColors.clayOnDark.withValues(alpha: 0.08)
-            : AppColors.clayTint.withValues(alpha: 0.5),
-      };
-    }
+    Color rowFgSub(BigBagStatus s) => Colors.white.withValues(alpha: 0.75);
 
-    Widget cell(String text, {bool bold = false, Color? color}) => Text(
-          text,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-            color: color ?? (bold ? ink : mute),
-            fontFamily: bold ? 'monospace' : null,
-          ),
-          overflow: TextOverflow.ellipsis,
-        );
+    IconData statusIcon(BigBagStatus s) => switch (s) {
+      BigBagStatus.stock => Icons.warehouse_rounded,
+      BigBagStatus.charge => Icons.local_shipping_rounded,
+      BigBagStatus.expedie => Icons.check_circle_rounded,
+    };
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: card,
-        border: Border.all(color: line),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          // Header row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: line)),
-            ),
-            child: Row(
-              children: [
-                for (var i = 0; i < cols.length; i++) ...[
-                  Expanded(
-                    flex: flexes[i],
-                    child: Text(
-                      cols[i],
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: mute,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          // Data rows
-          for (var i = 0; i < bags.length; i++)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return Column(
+      children: [
+        for (var i = 0; i < bags.length; i++)
+          GestureDetector(
+            onTap: bags[i].status == BigBagStatus.expedie
+                ? null
+                : () => _showEditOptionsDialog(context, bags[i]),
+            child: Container(
+              margin: EdgeInsets.only(bottom: i < bags.length - 1 ? 10 : 0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
-                color: getStatusBg(bags[i].status),
-                border: i < bags.length - 1
-                    ? Border(bottom: BorderSide(color: line, width: 0.8))
-                    : null,
+                color: rowBg(bags[i].status),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    flex: flexes[0],
+                  // ── big bag number ──────────────────────────────────────
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
-                      bags[i].code,
-                      style: AppTextStyles.monoWeight(20, FontWeight.w800, color: getStatusColor(bags[i].status)),
+                      '${bags.length - i}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  // ── code + time ─────────────────────────────────────────
                   Expanded(
-                    flex: flexes[1],
-                    child: cell(
-                      '${weightFmt.format(bags[i].poidsBrut)} kg',
-                      color: getStatusColor(bags[i].status).withValues(alpha: 0.85),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          bags[i].code,
+                          style: AppTextStyles.monoWeight(
+                            22,
+                            FontWeight.w900,
+                            color: rowFg(bags[i].status),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          fmt.format(bags[i].createdAt),
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: rowFgSub(bags[i].status),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    flex: flexes[2],
-                    child: cell(
-                      fmt.format(bags[i].createdAt),
-                      color: getStatusColor(bags[i].status).withValues(alpha: 0.8),
-                    ),
-                  ),
-                  Expanded(
-                    flex: flexes[3],
-                    child: _StatusBadge(status: bags[i].status),
+                  // ── weight ──────────────────────────────────────────────
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${weightFmt.format(bags[i].poidsBrut)} kg',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: rowFg(bags[i].status),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // ── status icon chip ────────────────────────────────
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              statusIcon(bags[i].status),
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              switch (bags[i].status) {
+                                BigBagStatus.stock => context.tr('st_stock'),
+                                BigBagStatus.charge => context.tr('st_charge'),
+                                BigBagStatus.expedie => context.tr('st_expedie'),
+                              },
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
-}
 
-class _StatusBadge extends StatelessWidget {
-  final BigBagStatus status;
-  const _StatusBadge({required this.status});
+  void _showEditOptionsDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Center(
+            child: Text(
+              context.tr('prod_edit_dialog_title'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+          ),
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _showModifyWeightDialog(context, bag);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit, size: 36),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.tr('prod_edit_dialog_modify'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _showConfirmDeleteDialog(context, bag);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.delete, size: 36),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.tr('prod_edit_dialog_delete'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final (bg, fg) = switch (status) {
-      BigBagStatus.stock => (
-          isDark
-              ? AppColors.leafOnDark.withValues(alpha: 0.16)
-              : AppColors.leafTint,
-          isDark ? AppColors.leafOnDark : AppColors.leafDark,
-        ),
-      BigBagStatus.charge => (
-          isDark
-              ? AppColors.sunOnDark.withValues(alpha: 0.16)
-              : AppColors.sunTint,
-          isDark ? AppColors.sunOnDark : AppColors.sun,
-        ),
-      BigBagStatus.expedie => (
-          isDark
-              ? AppColors.clayOnDark.withValues(alpha: 0.16)
-              : AppColors.clayTint,
-          isDark ? AppColors.clayOnDark : AppColors.clay,
-        ),
-    };
+  void _showConfirmDeleteDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_delete_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_delete_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final app = context.read<AppProvider>();
+                await app.deleteBigBag(bag.id);
+                if (context.mounted) {
+                  Navigator.of(ctx).pop();
+                  showAppToast(context, context.tr('saved'));
+                }
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    final label = switch (status) {
-      BigBagStatus.stock => context.tr('st_stock'),
-      BigBagStatus.charge => context.tr('st_charge'),
-      BigBagStatus.expedie => context.tr('st_expedie'),
-    };
+  void _showModifyWeightDialog(BuildContext context, BigBag bag) {
+    final controller = TextEditingController(text: bag.poidsBrut.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_modify_dialog_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Container(
+            width: 320,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: TextField(
+              controller: controller,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                suffixText: context.tr('kg'),
+                suffixStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                final text = controller.text.replaceAll(',', '.');
+                final w = double.tryParse(text);
+                if (w == null || w < 50) {
+                  showAppToast(context, "Poids invalide (< 50)");
+                  return;
+                }
+                Navigator.of(ctx).pop();
+                _showConfirmSaveDialog(context, bag, w);
+              },
+              child: Text(
+                context.tr('prod_save'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: fg),
-      ),
+  void _showConfirmSaveDialog(BuildContext context, BigBag bag, double newWeight) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_save_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_save_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final app = context.read<AppProvider>();
+                await app.updateBigBagWeight(bag.id, newWeight);
+                if (context.mounted) {
+                  Navigator.of(ctx).pop();
+                  showAppToast(context, context.tr('saved'));
+                }
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

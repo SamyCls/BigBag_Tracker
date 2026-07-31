@@ -79,6 +79,21 @@ class AppProvider extends ChangeNotifier {
 
   List<BigBag> recentBigBags({int limit = 8}) => _bigBags.take(limit).toList();
 
+  Future<void> updateBigBagWeight(int id, double newWeight) async {
+    await _bbDao.updateWeight(id, newWeight);
+    final idx = _bigBags.indexWhere((b) => b.id == id);
+    if (idx != -1) {
+      _bigBags[idx] = _bigBags[idx].copyWith(poidsBrut: newWeight);
+      for (final list in _bbByChargement.values) {
+        final cacheIdx = list.indexWhere((b) => b.id == id);
+        if (cacheIdx != -1) {
+          list[cacheIdx] = list[cacheIdx].copyWith(poidsBrut: newWeight);
+        }
+      }
+    }
+    notifyListeners();
+  }
+
   // ---------------------------------------------------------------------
   // Stock
   // ---------------------------------------------------------------------

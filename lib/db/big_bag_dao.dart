@@ -119,6 +119,18 @@ class BigBagDao {
     );
   }
 
+  Future<void> updateWeight(int id, double poidsBrut) async {
+    final db = await _db;
+    await db.update(
+      'big_bags',
+      {
+        'poids_brut': poidsBrut,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> delete(int id) async {
     final db = await _db;
     await db.delete('big_bags', where: 'id = ?', whereArgs: [id]);
