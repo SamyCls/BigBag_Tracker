@@ -6,6 +6,7 @@ import '../providers/app_provider.dart';
 import '../providers/language_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bb_code_keypad.dart';
+import '../utils/toast.dart';
 
 /// Écran Stock : vue temps réel des Big Bags, filtres rapides, recherche
 /// et totaux (nombre, poids en stock).
@@ -76,8 +77,8 @@ class _StockScreenState extends State<StockScreen> {
 
     // Memorable high-contrast colors for outdoor usage (sun exposure)
     final box1Bg = isDark ? const Color(0xFF065F46) : const Color(0xFF059669); // Emerald Green (EN STOCK)
-    final box2Bg = isDark ? const Color(0xFF9A3412) : const Color(0xFFEA580C); // Orange (POIDS)
-    final box3Bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFF2563EB); // Royal Blue (CHARGÉS)
+    final box2Bg = isDark ? const Color(0xFF1E3A8A) : const Color(0xFF2563EB); // Royal Blue (POIDS)
+    final box3Bg = isDark ? const Color(0xFF9A3412) : const Color(0xFFEA580C); // Orange/Yellow (CHARGÉS)
     final box4Bg = isDark ? const Color(0xFF881337) : const Color(0xFFBE123C); // Clay/Rose/Red (EXPÉDIÉS)
 
     final boxTextColor = Colors.white.withValues(alpha: 0.76);
@@ -95,13 +96,26 @@ class _StockScreenState extends State<StockScreen> {
     final dateFilteredStock = dateFilteredBags.where((b) => b.status == BigBagStatus.stock).length;
     final dateFilteredCharge = dateFilteredBags.where((b) => b.status == BigBagStatus.charge).length;
     final dateFilteredExpedie = dateFilteredBags.where((b) => b.status == BigBagStatus.expedie).length;
+    final dateFilteredStockPoids = dateFilteredBags
+        .where((b) => b.status == BigBagStatus.stock)
+        .fold(0.0, (sum, b) => sum + b.poidsBrut);
 
-    final filtered = app.filterBigBags(status: _filter, search: _search).where((b) {
-      if (_selectedDate == null) return true;
-      return b.createdAt.year == _selectedDate!.year &&
-          b.createdAt.month == _selectedDate!.month &&
-          b.createdAt.day == _selectedDate!.day;
-    }).toList();
+    final List<BigBag> filtered;
+    if (_showSearchPad && _search.isNotEmpty) {
+      final cleanQuery = _digits.replaceFirst(RegExp(r'^0+'), '');
+      if (cleanQuery.isEmpty) {
+        filtered = app.bigBags;
+      } else {
+        filtered = app.bigBags.where((b) => b.code.contains(cleanQuery)).toList();
+      }
+    } else {
+      filtered = app.filterBigBags(status: _filter, search: _search).where((b) {
+        if (_selectedDate == null) return true;
+        return b.createdAt.year == _selectedDate!.year &&
+            b.createdAt.month == _selectedDate!.month &&
+            b.createdAt.day == _selectedDate!.day;
+      }).toList();
+    }
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 700;
 
@@ -112,17 +126,6 @@ class _StockScreenState extends State<StockScreen> {
       context.tr('nav_stock'),
     ];
     const flexes = [4, 3, 4, 3];
-
-    Widget cell(String text, {bool bold = false, Color? color}) => Text(
-          text,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-            color: color ?? (bold ? ink : mute),
-            fontFamily: bold ? 'monospace' : null,
-          ),
-          overflow: TextOverflow.ellipsis,
-        );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -311,163 +314,166 @@ class _StockScreenState extends State<StockScreen> {
                     ),
                   const SizedBox(height: 20),
 
-                  // ── Stat tiles ─────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatTile(
-                          label: context.tr('st_stock'),
-                          value: '${app.stockCount}',
-                          unit: 'BB',
-                          fmt: fmt,
-                          bgColor: box1Bg,
-                          textColor: boxTextColor,
-                          valueColor: boxValueColor,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatTile(
+                  if (!_showSearchPad) ...[
+                    // ── Stat tiles ─────────────────────────────────────────
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _StatTile(
                           label: context.tr('stock_poids_total'),
-                          value: fmt.format(app.stockPoidsTotal),
+                          value: fmt.format(dateFilteredStockPoids),
                           unit: 'kg',
                           fmt: fmt,
                           bgColor: box2Bg,
                           textColor: boxTextColor,
                           valueColor: boxValueColor,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatTile(
-                          label: context.tr('stock_filter_charge'),
-                          value: '${app.chargeCount}',
-                          unit: 'BB',
-                          fmt: fmt,
-                          bgColor: box3Bg,
-                          textColor: boxTextColor,
-                          valueColor: boxValueColor,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatTile(
-                          label: context.tr('stock_filter_expedie'),
-                          value: '${app.expedieCount}',
-                          unit: 'BB',
-                          fmt: fmt,
-                          bgColor: box4Bg,
-                          textColor: boxTextColor,
-                          valueColor: boxValueColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Filter chips + Date button ──────────────────────────
-                  if (isWide)
-                    // Wide: chips left, date right in one row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _FilterChip(
-                                  label: context.tr('stock_filter_all'),
-                                  count: dateFilteredTotal,
-                                  active: _filter == null,
-                                  onTap: () => setState(() => _filter = null),
-                                ),
-                                const SizedBox(width: 10),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_stock'),
-                                  count: dateFilteredStock,
-                                  active: _filter == BigBagStatus.stock,
-                                  onTap: () => setState(() => _filter = BigBagStatus.stock),
-                                ),
-                                const SizedBox(width: 10),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_charge'),
-                                  count: dateFilteredCharge,
-                                  active: _filter == BigBagStatus.charge,
-                                  onTap: () => setState(() => _filter = BigBagStatus.charge),
-                                ),
-                                const SizedBox(width: 10),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_expedie'),
-                                  count: dateFilteredExpedie,
-                                  active: _filter == BigBagStatus.expedie,
-                                  onTap: () => setState(() => _filter = BigBagStatus.expedie),
-                                ),
-                              ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatTile(
+                                label: context.tr('st_stock'),
+                                value: '$dateFilteredStock',
+                                unit: 'BB',
+                                fmt: fmt,
+                                bgColor: box1Bg,
+                                textColor: boxTextColor,
+                                valueColor: boxValueColor,
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _DateFilterButton(
-                          selectedDate: _selectedDate,
-                          onChanged: (date) => setState(() => _selectedDate = date),
-                        ),
-                      ],
-                    )
-                  else
-                    // Narrow: small compact chips left, date button right — all in one row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _FilterChip(
-                                  label: context.tr('stock_filter_all'),
-                                  count: dateFilteredTotal,
-                                  active: _filter == null,
-                                  onTap: () => setState(() => _filter = null),
-                                  compact: true,
-                                ),
-                                const SizedBox(width: 6),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_stock'),
-                                  count: dateFilteredStock,
-                                  active: _filter == BigBagStatus.stock,
-                                  onTap: () => setState(() => _filter = BigBagStatus.stock),
-                                  compact: true,
-                                ),
-                                const SizedBox(width: 6),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_charge'),
-                                  count: dateFilteredCharge,
-                                  active: _filter == BigBagStatus.charge,
-                                  onTap: () => setState(() => _filter = BigBagStatus.charge),
-                                  compact: true,
-                                ),
-                                const SizedBox(width: 6),
-                                _FilterChip(
-                                  label: context.tr('stock_filter_expedie'),
-                                  count: dateFilteredExpedie,
-                                  active: _filter == BigBagStatus.expedie,
-                                  onTap: () => setState(() => _filter = BigBagStatus.expedie),
-                                  compact: true,
-                                ),
-                              ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _StatTile(
+                                label: context.tr('stock_filter_charge'),
+                                value: '$dateFilteredCharge',
+                                unit: 'BB',
+                                fmt: fmt,
+                                bgColor: box3Bg,
+                                textColor: boxTextColor,
+                                valueColor: boxValueColor,
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        _DateFilterButton(
-                          selectedDate: _selectedDate,
-                          onChanged: (date) => setState(() => _selectedDate = date),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _StatTile(
+                                label: context.tr('stock_filter_expedie'),
+                                value: '$dateFilteredExpedie',
+                                unit: 'BB',
+                                fmt: fmt,
+                                bgColor: box4Bg,
+                                textColor: boxTextColor,
+                                valueColor: boxValueColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
+                    // ── Filter chips + Date button ──────────────────────────
+                    if (isWide)
+                      // Wide: chips left, date right in one row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_all'),
+                                    count: dateFilteredTotal,
+                                    active: _filter == null,
+                                    onTap: () => setState(() => _filter = null),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_stock'),
+                                    count: dateFilteredStock,
+                                    active: _filter == BigBagStatus.stock,
+                                    onTap: () => setState(() => _filter = BigBagStatus.stock),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_charge'),
+                                    count: dateFilteredCharge,
+                                    active: _filter == BigBagStatus.charge,
+                                    onTap: () => setState(() => _filter = BigBagStatus.charge),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_expedie'),
+                                    count: dateFilteredExpedie,
+                                    active: _filter == BigBagStatus.expedie,
+                                    onTap: () => setState(() => _filter = BigBagStatus.expedie),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _DateFilterButton(
+                            selectedDate: _selectedDate,
+                            onChanged: (date) => setState(() => _selectedDate = date),
+                          ),
+                        ],
+                      )
+                    else
+                      // Narrow: small compact chips left, date button right — all in one row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_all'),
+                                    count: dateFilteredTotal,
+                                    active: _filter == null,
+                                    onTap: () => setState(() => _filter = null),
+                                    compact: true,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_stock'),
+                                    count: dateFilteredStock,
+                                    active: _filter == BigBagStatus.stock,
+                                    onTap: () => setState(() => _filter = BigBagStatus.stock),
+                                    compact: true,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_charge'),
+                                    count: dateFilteredCharge,
+                                    active: _filter == BigBagStatus.charge,
+                                    onTap: () => setState(() => _filter = BigBagStatus.charge),
+                                    compact: true,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  _FilterChip(
+                                    label: context.tr('stock_filter_expedie'),
+                                    count: dateFilteredExpedie,
+                                    active: _filter == BigBagStatus.expedie,
+                                    onTap: () => setState(() => _filter = BigBagStatus.expedie),
+                                    compact: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _DateFilterButton(
+                            selectedDate: _selectedDate,
+                            onChanged: (date) => setState(() => _selectedDate = date),
+                          ),
+                        ],
+                      ),
+                  ],
                   // ── Table Header ──────────────────────────────────────
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -514,64 +520,122 @@ class _StockScreenState extends State<StockScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final bb = filtered[i];
-                      final isDarkRow = isDark;
-                      Color rowBg;
-                      Color codeColor;
-                      switch (bb.status) {
-                        case BigBagStatus.stock:
-                          rowBg = isDarkRow
-                              ? AppColors.leafOnDark.withValues(alpha: 0.08)
-                              : AppColors.leafTint.withValues(alpha: 0.5);
-                          codeColor = isDarkRow ? AppColors.leafOnDark : AppColors.leafDark;
-                        case BigBagStatus.charge:
-                          rowBg = isDarkRow
-                              ? AppColors.sunOnDark.withValues(alpha: 0.08)
-                              : AppColors.sunTint.withValues(alpha: 0.5);
-                          codeColor = isDarkRow ? AppColors.sunOnDark : AppColors.sun;
-                        case BigBagStatus.expedie:
-                          rowBg = isDarkRow
-                              ? AppColors.clayOnDark.withValues(alpha: 0.08)
-                              : AppColors.clayTint.withValues(alpha: 0.5);
-                          codeColor = isDarkRow ? AppColors.clayOnDark : AppColors.clay;
-                      }
+                      
+                      // ── vivid status colours ─────────────────────────────────────────────
+                      final Color cardBg = switch (bb.status) {
+                        BigBagStatus.stock =>
+                          isDark ? const Color(0xFF1B4D2E) : const Color(0xFF2E7D32),
+                        BigBagStatus.charge =>
+                          isDark ? const Color(0xFFD97706) : const Color(0xFFF57F17),
+                        BigBagStatus.expedie => const Color(0xFF881337),
+                      };
+
+                      final IconData icon = switch (bb.status) {
+                        BigBagStatus.stock => Icons.warehouse_rounded,
+                        BigBagStatus.charge => Icons.local_shipping_rounded,
+                        BigBagStatus.expedie => Icons.check_circle_rounded,
+                      };
+
                       return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: rowBg,
-                          border: Border(
-                            bottom: BorderSide(color: line, width: 0.8),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: flexes[0],
-                              child: Text(
-                                bb.code,
-                                style: AppTextStyles.monoWeight(
-                                  20,
-                                  FontWeight.w800,
-                                  color: codeColor,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                        margin: EdgeInsets.only(bottom: i < filtered.length - 1 ? 10 : 0),
+                        child: Material(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: bb.status == BigBagStatus.expedie
+                                ? null
+                                : () => _showEditOptionsDialog(context, bb),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                              child: Row(
+                                children: [
+                                  // ── Code (flex 4) ──────────────────────────────────────
+                                  Expanded(
+                                    flex: flexes[0],
+                                    child: Text(
+                                      bb.code,
+                                      style: AppTextStyles.monoWeight(
+                                        20,
+                                        FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  // ── Weight (flex 3) ──────────────────────────────────────
+                                  Expanded(
+                                    flex: flexes[1],
+                                    child: Text(
+                                      '${fmt.format(bb.poidsBrut)} kg',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  // ── Date (flex 4) ──────────────────────────────────────
+                                  Expanded(
+                                    flex: flexes[2],
+                                    child: Text(
+                                      dateFmt.format(bb.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  // ── Status Chip (flex 3) ──────────────────────────────────
+                                  Expanded(
+                                    flex: flexes[3],
+                                    child: Align(
+                                      alignment: Alignment.center,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              icon,
+                                              size: 16,
+                                              color: Colors.white,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                switch (bb.status) {
+                                                  BigBagStatus.stock => context.tr('st_stock'),
+                                                  BigBagStatus.charge => context.tr('st_charge'),
+                                                  BigBagStatus.expedie => context.tr('st_expedie'),
+                                                },
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            Expanded(
-                              flex: flexes[1],
-                              child: cell('${fmt.format(bb.poidsBrut)} ${context.tr('kg')}', color: codeColor.withValues(alpha: 0.85)),
-                            ),
-                            Expanded(
-                              flex: flexes[2],
-                              child: cell(dateFmt.format(bb.createdAt), color: codeColor.withValues(alpha: 0.8)),
-                            ),
-                            Expanded(
-                              flex: flexes[3],
-                              child: _StatusBadge(status: bb.status),
-                            ),
-                          ],
+                          ),
                         ),
                       );
                     },
@@ -580,6 +644,314 @@ class _StockScreenState extends State<StockScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showEditOptionsDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Center(
+            child: Text(
+              context.tr('prod_edit_dialog_title'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+          ),
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _showModifyWeightDialog(context, bag);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit, size: 36),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.tr('prod_edit_dialog_modify'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _showConfirmDeleteDialog(context, bag);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.delete, size: 36),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.tr('prod_edit_dialog_delete'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showConfirmDeleteDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_delete_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_delete_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showSecondConfirmDeleteDialog(context, bag);
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSecondConfirmDeleteDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_delete_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_delete_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final app = context.read<AppProvider>();
+                await app.deleteBigBag(bag.id);
+                if (context.mounted) {
+                  Navigator.of(ctx).pop();
+                  showAppToast(context, context.tr('saved'));
+                }
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showModifyWeightDialog(BuildContext context, BigBag bag) {
+    final controller = TextEditingController(text: bag.poidsBrut.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_modify_dialog_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Container(
+            width: 320,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: TextField(
+              controller: controller,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                suffixText: context.tr('kg'),
+                suffixStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                final text = controller.text.replaceAll(',', '.');
+                final w = double.tryParse(text);
+                if (w == null || w < 50) {
+                  showAppToast(context, "Poids invalide (< 50)");
+                  return;
+                }
+                Navigator.of(ctx).pop();
+                _showConfirmSaveDialog(context, bag, w);
+              },
+              child: Text(
+                context.tr('prod_save'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showConfirmSaveDialog(BuildContext context, BigBag bag, double newWeight) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_save_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_save_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final app = context.read<AppProvider>();
+                await app.updateBigBagWeight(bag.id, newWeight);
+                if (context.mounted) {
+                  Navigator.of(ctx).pop();
+                  showAppToast(context, context.tr('saved'));
+                }
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -723,55 +1095,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-// ── Status badge ───────────────────────────────────────────────────────────
 
-class _StatusBadge extends StatelessWidget {
-  final BigBagStatus status;
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final (bg, fg) = switch (status) {
-      BigBagStatus.stock => (
-          isDark
-              ? AppColors.leafOnDark.withValues(alpha: 0.16)
-              : AppColors.leafTint,
-          isDark ? AppColors.leafOnDark : AppColors.leafDark,
-        ),
-      BigBagStatus.charge => (
-          isDark
-              ? AppColors.sunOnDark.withValues(alpha: 0.16)
-              : AppColors.sunTint,
-          isDark ? AppColors.sunOnDark : AppColors.sun,
-        ),
-      BigBagStatus.expedie => (
-          isDark
-              ? AppColors.clayOnDark.withValues(alpha: 0.16)
-              : AppColors.clayTint,
-          isDark ? AppColors.clayOnDark : AppColors.clay,
-        ),
-    };
-
-    final label = switch (status) {
-      BigBagStatus.stock => context.tr('st_stock'),
-      BigBagStatus.charge => context.tr('st_charge'),
-      BigBagStatus.expedie => context.tr('st_expedie'),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: fg),
-      ),
-    );
-  }
-}
 
 class _DateFilterButton extends StatelessWidget {
   final DateTime? selectedDate;

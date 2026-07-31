@@ -102,18 +102,18 @@ class _BbKeyState extends State<_BbKey> {
       },
       onPointerCancel: (_) => setState(() => _isPressed = false),
       child: Container(
-        height: 60,
+        height: 72,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _isPressed ? leaf : line, width: 0.8),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _isPressed ? leaf : line, width: 1.0),
         ),
         alignment: Alignment.center,
         child: Text(
           widget.label,
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
             color: fg,
             fontFamily: widget.label == '←' ? null : 'monospace',
           ),

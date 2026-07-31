@@ -1096,6 +1096,12 @@ class _SessionViewState extends State<_SessionView> {
     final stockSuggestions = app
         .filterBigBags(status: BigBagStatus.stock)
         .where((b) => !bbs.any((loaded) => loaded.id == b.id))
+        .where((b) {
+          if (_digits == '000000') return true;
+          final cleanQuery = _digits.replaceFirst(RegExp(r'^0+'), '');
+          if (cleanQuery.isEmpty) return true;
+          return b.code.contains(cleanQuery);
+        })
         .toList();
 
     Widget buildListPanel() {
@@ -1673,7 +1679,7 @@ class _Tot extends StatelessWidget {
   }
 }
 
-class _StockSuggestionCard extends StatelessWidget {
+class _StockSuggestionCard extends StatefulWidget {
   final BigBag bb;
   final bool selected;
   final Color leaf;
@@ -1695,54 +1701,108 @@ class _StockSuggestionCard extends StatelessWidget {
   });
 
   @override
+  State<_StockSuggestionCard> createState() => _StockSuggestionCardState();
+}
+
+class _StockSuggestionCardState extends State<_StockSuggestionCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    if (widget.selected) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StockSuggestionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected != oldWidget.selected) {
+      if (widget.selected) {
+        _controller.repeat(reverse: true);
+      } else {
+        _controller.stop();
+        _controller.value = 0.0;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0', 'fr_FR');
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final cardBg = leaf.withValues(alpha: selected ? 0.18 : 0.08);
-    final borderColor = leaf.withValues(alpha: selected ? 1.0 : 0.3);
     final textCodeColor = isDark ? AppColors.leafOnDark : AppColors.leafDark;
 
-    return Material(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          width: 160,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: borderColor,
-              width: selected ? 2.5 : 1.5,
-            ),
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        final double pulse = widget.selected ? _animation.value : 0.0;
+        final cardBg = widget.leaf.withValues(
+          alpha: widget.selected ? (0.08 + pulse * 0.20) : 0.08,
+        );
+        final borderColor = widget.leaf.withValues(
+          alpha: widget.selected ? (0.3 + pulse * 0.7) : 0.3,
+        );
+
+        return Material(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
             borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                bb.code,
-                style: AppTextStyles.monoWeight(
-                  22,
-                  FontWeight.w800,
-                  color: textCodeColor,
+            onTap: widget.onTap,
+            child: Container(
+              width: 160,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: borderColor,
+                  width: widget.selected ? 3.0 : 1.5,
                 ),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${fmt.format(bb.poidsBrut)} kg',
-                style: AppTextStyles.monoWeight(
-                  17,
-                  FontWeight.w600,
-                  color: textCodeColor.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
+              child: child,
+            ),
           ),
-        ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            widget.bb.code,
+            style: AppTextStyles.monoWeight(
+              22,
+              FontWeight.w800,
+              color: textCodeColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${fmt.format(widget.bb.poidsBrut)} kg',
+            style: AppTextStyles.monoWeight(
+              17,
+              FontWeight.w600,
+              color: textCodeColor.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
       ),
     );
   }

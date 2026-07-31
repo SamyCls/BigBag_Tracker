@@ -1094,6 +1094,57 @@ class _RecentTable extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showSecondConfirmDeleteDialog(context, bag);
+              },
+              child: Text(
+                context.tr('yes'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSecondConfirmDeleteDialog(BuildContext context, BigBag bag) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            context.tr('prod_confirm_delete_title'),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            context.tr('prod_confirm_delete_body'),
+            style: const TextStyle(fontSize: 18),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black87,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                context.tr('cancel'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () async {
                 final app = context.read<AppProvider>();
                 await app.deleteBigBag(bag.id);
